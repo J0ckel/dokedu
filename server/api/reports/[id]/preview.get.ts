@@ -218,10 +218,19 @@ export default defineEventHandler(async (event) => {
     competences: competencesData
   }
 
-  // Render the PDF using the utility function
-  const pdfBuffer = await typstRenderTemplate(templateContent, templateData, {
-    logo: processedLogo
-  })
+  let pdfBuffer: Buffer
+  try {
+    // Render the PDF using the utility function
+    pdfBuffer = await typstRenderTemplate(templateContent, templateData, {
+      logo: processedLogo
+    })
+  } catch (error: any) {
+    console.error("[REPORT_PREVIEW] Failed to render PDF", error)
+    throw createError({
+      statusCode: 500,
+      message: `PDF rendering failed: ${error?.message ?? "Unknown Typst error"}`
+    })
+  }
 
   setHeader(event, "Content-Type", "application/pdf")
   return new Response(pdfBuffer)

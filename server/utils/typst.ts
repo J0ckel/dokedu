@@ -1,4 +1,6 @@
 import { spawn } from "node:child_process"
+import { tmpdir } from "node:os"
+import { delimiter, join } from "node:path"
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises"
 import { nanoid } from "nanoid"
 
@@ -9,7 +11,7 @@ interface TypstRenderOptions {
 
 export async function typstRenderTemplate(template: string, data: Record<string, any> = {}, options: TypstRenderOptions = {}): Promise<Buffer> {
   // Create a temporary directory
-  const tmpDir = `/tmp/x-dokedu/typst/${nanoid()}`
+  const tmpDir = join(tmpdir(), "x-dokedu", "typst", nanoid())
   await mkdir(tmpDir, { recursive: true })
 
   try {
@@ -32,13 +34,14 @@ export async function typstRenderTemplate(template: string, data: Record<string,
 
     // Add font paths in production
     if (!process.dev && fontPaths.length > 0) {
-      args.push("--font-path", fontPaths.join(":"))
+      args.push("--font-path", fontPaths.join(delimiter))
     }
 
     args.push(`${tmpDir}/template.typ`, `${tmpDir}/output.pdf`)
 
     // Spawn typst process
-    const typst = spawn("typst", args)
+    const typstBinary = process.env.TYPST_BIN || "typst"
+    const typst = spawn(typstBinary, args)
 
     // Capture stdout
     typst.stdout.on("data", (data) => {
@@ -63,8 +66,11 @@ export async function typstRenderTemplate(template: string, data: Record<string,
     })
 
     // Wait for the typst process to finish
-    const exitCode = await new Promise<number>((resolve) => {
-      typst.on("close", (code) => resolve(code ?? 0))
+    const exitCode = await new Promise<number>((resolve, reject) => {
+      typst.once("error", (error) => {
+        reject(new Error(`Failed to start typst process (binary: ${typstBinary}): ${error.message}`))
+      })
+      typst.once("close", (code) => resolve(code ?? 0))
     })
 
     // Check for errors
