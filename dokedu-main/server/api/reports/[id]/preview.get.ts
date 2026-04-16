@@ -9,7 +9,12 @@ import { and, eq, inArray, isNull, desc, gte, lte } from "drizzle-orm"
 import { typstRenderTemplate } from "~~/server/utils/typst"
 
 const querySchema = z.object({
-  updatedAt: z.coerce.date().optional()
+  updatedAt: z.coerce.date().optional(),
+  onlyLearnedCompetences: z.preprocess((value) => {
+    if (value === true || value === "true" || value === 1 || value === "1") return true
+    if (value === false || value === "false" || value === 0 || value === "0") return false
+    return undefined
+  }, z.boolean().optional())
 })
 
 // Helper function to get hex color from color name and shade
@@ -24,6 +29,8 @@ export default defineEventHandler(async (event) => {
 
   const id = getRouterParam(event, "id")
   if (!id) throw createError({ statusCode: 404, message: "Not found" })
+
+  const query = await getValidatedQuery(event, querySchema.parse)
 
   const school = await useDrizzle().query.organisations.findFirst({
     where: and(eq(organisations.id, secure.organisationId))
@@ -118,6 +125,9 @@ export default defineEventHandler(async (event) => {
       }
     })
 
+    const onlyLearnedCompetencesEnabled = query.onlyLearnedCompetences ?? reportContentTyped?.onlyLearnedCompetences ?? false
+    const learnedLevelThreshold = 1
+
     // Helper function to build competence tree recursively
     const buildCompetenceTree = (parentId: string | null): any[] => {
       return relevantCompetences
@@ -128,7 +138,7 @@ export default defineEventHandler(async (event) => {
             const level = competenceLevels.get(competence.id) || 0
 
             // Filter out unlearned competences if the option is enabled
-            if (reportContentTyped?.onlyLearnedCompetences && level === 0) {
+            if (onlyLearnedCompetencesEnabled && level < learnedLevelThreshold) {
               return null
             }
 
@@ -143,7 +153,7 @@ export default defineEventHandler(async (event) => {
             // Group node - has children
             const children = buildCompetenceTree(competence.id)
             // If filtering unlearned competences, skip empty groups
-            if (reportContentTyped?.onlyLearnedCompetences && children.length === 0) {
+            if (onlyLearnedCompetencesEnabled && children.length === 0) {
               return null
             }
 
@@ -186,19 +196,25 @@ export default defineEventHandler(async (event) => {
             if (item.type === "competence") {
               result.push(item)
             } else if (item.children) {
-              // Add group header
-              result.push({
-                name: item.name,
-                type: "group",
-                level: -1 // Special marker for groups
-              })
+              // Group headers render as "empty" rows in the PDF table.
+              // Keep them only when all competences are shown.
+              if (!onlyLearnedCompetencesEnabled) {
+                result.push({
+                  name: item.name,
+                  type: "group",
+                  level: -1 // Special marker for groups
+                })
+              }
               result.push(...flattenCompetences(item.children))
             }
           })
           return result
         }
 
-        const flatCompetences = flattenCompetences(children)
+        const flatCompetences = flattenCompetences(children).filter((item) => {
+          if (!onlyLearnedCompetencesEnabled) return true
+          return item.type === "competence" && (item.level ?? 0) >= learnedLevelThreshold
+        })
 
         return {
           id: subject.id,

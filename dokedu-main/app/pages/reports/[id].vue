@@ -107,11 +107,19 @@ watchDebounced(
 
 const downloadingReport = ref(false)
 
+const previewUrl = computed(() => {
+  const params = new URLSearchParams({
+    s: lastHash.value,
+    onlyLearnedCompetences: String(onlyLearnedCompetences.value)
+  })
+  return `/api/reports/${id}/preview?${params.toString()}`
+})
+
 async function downloadReport() {
   downloadingReport.value = true
   try {
     // Fetch the PDF asynchronously
-    const response = await fetch(`/api/reports/${id}/preview?s=${lastHash.value}`)
+    const response = await fetch(previewUrl.value)
 
     if (!response.ok) {
       throw new Error(`Failed to download report: ${response.statusText}`)
@@ -248,7 +256,7 @@ async function downloadReport() {
               </div>
             </div>
           </div>
-          <iframe :src="`/api/reports/${id}/preview?s=${lastHash}`" class="h-full w-full bg-black p-2" frameborder="0"></iframe>
+          <iframe :src="previewUrl" class="h-full w-full bg-black p-2" frameborder="0"></iframe>
         </div>
       </div>
     </DPageContent>

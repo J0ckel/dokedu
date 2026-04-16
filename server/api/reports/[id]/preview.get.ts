@@ -9,7 +9,12 @@ import { and, eq, inArray, isNull, desc } from "drizzle-orm"
 import { typstRenderTemplate } from "~~/server/utils/typst"
 
 const querySchema = z.object({
-  updatedAt: z.coerce.date().optional()
+  updatedAt: z.coerce.date().optional(),
+  onlyLearnedCompetences: z.preprocess((value) => {
+    if (value === true || value === "true" || value === 1 || value === "1") return true
+    if (value === false || value === "false" || value === 0 || value === "0") return false
+    return undefined
+  }, z.boolean().optional())
 })
 
 // Helper function to get hex color from color name and shade
@@ -24,6 +29,8 @@ export default defineEventHandler(async (event) => {
 
   const id = getRouterParam(event, "id")
   if (!id) throw createError({ statusCode: 404, message: "Not found" })
+
+  const query = await getValidatedQuery(event, querySchema.parse)
 
   const school = await useDrizzle().query.organisations.findFirst({
     where: and(eq(organisations.id, secure.organisationId))
@@ -99,6 +106,15 @@ export default defineEventHandler(async (event) => {
       }
     })
 
+    const reportContentTyped = report.content as any
+    const onlyLearnedFromReport =
+      reportContentTyped?.onlyLearnedCompetences === true ||
+      reportContentTyped?.onlyLearnedCompetences === "true" ||
+      reportContentTyped?.onlyLearnedCompetences === 1 ||
+      reportContentTyped?.onlyLearnedCompetences === "1"
+    const onlyLearnedCompetencesEnabled = query.onlyLearnedCompetences ?? onlyLearnedFromReport
+    const learnedLevelThreshold = 1
+
     // Helper function to build competence tree recursively
     const buildCompetenceTree = (parentId: string | null): any[] => {
       return relevantCompetences
@@ -106,24 +122,37 @@ export default defineEventHandler(async (event) => {
         .map((competence) => {
           if (competence.competenceType === "competence") {
             // Leaf node - actual competence
+            const level = competenceLevels.get(competence.id) || 0
+
+            if (onlyLearnedCompetencesEnabled && level < learnedLevelThreshold) {
+              return null
+            }
+
             return {
               id: competence.id,
               name: competence.name,
-              level: competenceLevels.get(competence.id) || 0,
+              level,
               type: "competence",
               sortOrder: competence.sortOrder
             }
           } else {
             // Group node - has children
+            const children = buildCompetenceTree(competence.id)
+
+            if (onlyLearnedCompetencesEnabled && children.length === 0) {
+              return null
+            }
+
             return {
               id: competence.id,
               name: competence.name,
               type: "group",
-              children: buildCompetenceTree(competence.id),
+              children,
               sortOrder: competence.sortOrder
             }
           }
         })
+        .filter((item) => item !== null)
         .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0) || a.name.localeCompare(b.name))
     }
 
@@ -153,19 +182,23 @@ export default defineEventHandler(async (event) => {
             if (item.type === "competence") {
               result.push(item)
             } else if (item.children) {
-              // Add group header
-              result.push({
-                name: item.name,
-                type: "group",
-                level: -1 // Special marker for groups
-              })
+              if (!onlyLearnedCompetencesEnabled) {
+                result.push({
+                  name: item.name,
+                  type: "group",
+                  level: -1 // Special marker for groups
+                })
+              }
               result.push(...flattenCompetences(item.children))
             }
           })
           return result
         }
 
-        const flatCompetences = flattenCompetences(children)
+        const flatCompetences = flattenCompetences(children).filter((item) => {
+          if (!onlyLearnedCompetencesEnabled) return true
+          return item.type === "competence" && (item.level ?? 0) >= learnedLevelThreshold
+        })
 
         return {
           id: subject.id,
