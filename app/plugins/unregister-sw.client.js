@@ -9,9 +9,6 @@ export default defineNuxtPlugin(() => {
           console.log("Unregistering service worker:", registration)
           registration.unregister()
         }
-
-        // Optionally register the self-destroying service worker
-        navigator.serviceWorker.register("/unregister-sw.js")
       })
       .catch((error) => {
         console.error("Service worker unregistration failed:", error)

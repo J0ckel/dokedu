@@ -233,7 +233,9 @@ export default defineEventHandler(async (event) => {
   }
 
   setHeader(event, "Content-Type", "application/pdf")
-  return new Response(pdfBuffer)
+  setHeader(event, "Content-Length", pdfBuffer.byteLength.toString())
+  setHeader(event, "Content-Disposition", "inline; filename=report-preview.pdf")
+  return pdfBuffer
 })
 
 const TEMPLATE = `#let data = json("data.json")
