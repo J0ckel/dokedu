@@ -1,10 +1,12 @@
 <script setup lang="ts">
+const { user } = useUserSession()
+const canManage = computed(() => user.value?.role === "admin" || user.value?.role === "owner")
 const route = useRoute()
 const id = computed(() => route.params.id)
 
 const search = ref("")
 
-const { data: competences } = await useFetch("/api/competences", {
+const { data: competences, refresh } = await useFetch("/api/competences", {
   params: {
     search: search,
     competenceId: id,
@@ -17,6 +19,9 @@ const { data: competences } = await useFetch("/api/competences", {
     <DHeader>
       <DHeaderTitle>Kompetenzen</DHeaderTitle>
       <DInputSearch v-model="search" />
+      <template #right>
+        <DCompetenceEditor v-if="canManage" :parent-id="id as string" @saved="refresh" />
+      </template>
     </DHeader>
 
     <div class="block min-h-0 px-4 pt-2.5">
@@ -27,20 +32,20 @@ const { data: competences } = await useFetch("/api/competences", {
     </div>
 
     <DPageContent>
-      <NuxtLink
-        :to="competence.competenceType === 'competence' ? undefined : `/competences/${competence.id}`"
+      <div
         v-for="competence in competences"
         class="grid grid-cols-2 items-center justify-between gap-4 rounded px-2 py-2 hover:bg-neutral-100"
         :style="{ gridTemplateColumns: '1fr 110px' }"
       >
-        <div class="line-clamp-1 text-sm text-neutral-700 cursor-default">
+        <NuxtLink :to="competence.competenceType === 'competence' ? undefined : `/competences/${competence.id}`" class="line-clamp-1 text-sm text-neutral-700 cursor-default">
           <span v-if="competence.competenceType === 'competence'" class="cursor-default">{{ competence.name }}</span>
           <DTag v-else class="w-fit cursor-default" :color="`gray`">{{ competence.name }}</DTag>
-        </div>
+        </NuxtLink>
         <div class="line-clamp-1 text-right text-sm text-neutral-700">
           <template v-if="competence.grades"> {{ competence.grades[0] }} - {{ competence.grades[competence.grades.length - 1] }} </template>
         </div>
-      </NuxtLink>
+        <DCompetenceEditor v-if="canManage" class="col-span-2 justify-end" :competence="competence" @saved="refresh" @deleted="refresh" />
+      </div>
     </DPageContent>
   </DPage>
 </template>
