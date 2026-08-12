@@ -182,23 +182,21 @@ export default defineEventHandler(async (event) => {
             if (item.type === "competence") {
               result.push(item)
             } else if (item.children) {
-              if (!onlyLearnedCompetencesEnabled) {
+              const childCompetences = flattenCompetences(item.children)
+              if (childCompetences.length > 0) {
                 result.push({
                   name: item.name,
                   type: "group",
                   level: -1 // Special marker for groups
                 })
+                result.push(...childCompetences)
               }
-              result.push(...flattenCompetences(item.children))
             }
           })
           return result
         }
 
-        const flatCompetences = flattenCompetences(children).filter((item) => {
-          if (!onlyLearnedCompetencesEnabled) return true
-          return item.type === "competence" && (item.level ?? 0) >= learnedLevelThreshold
-        })
+        const flatCompetences = flattenCompetences(children).filter((item) => item.type === "group" || (item.level ?? 0) >= learnedLevelThreshold)
 
         return {
           id: subject.id,
