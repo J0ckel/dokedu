@@ -184,11 +184,6 @@ export default defineEventHandler(async (event) => {
             } else if (item.children) {
               const childCompetences = flattenCompetences(item.children)
               if (childCompetences.length > 0) {
-                result.push({
-                  name: item.name,
-                  type: "group",
-                  level: -1 // Special marker for groups
-                })
                 result.push(...childCompetences)
               }
             }
