@@ -1,4 +1,4 @@
-import { isNull, arrayContains, desc, asc } from "drizzle-orm"
+import { isNull, desc, asc, and, eq } from "drizzle-orm"
 import { competences } from "~~/server/database/schema"
 import MiniSearch from "minisearch"
 import { z } from "zod"
@@ -24,9 +24,8 @@ export default defineEventHandler(async (event) => {
   //     .where(and(eq(competences.organisationId, secure.organisationId), isNull(competences.deletedAt)))
   // }
 
-  let parent = null
-  if (competenceId) {
-    parent = await useDrizzle().query.competences.findFirst({
+  if (competenceId && !search) {
+    const parent = await useDrizzle().query.competences.findFirst({
       where: and(eq(competences.id, competenceId), eq(competences.organisationId, secure.organisationId))
     })
 
@@ -40,9 +39,7 @@ export default defineEventHandler(async (event) => {
     .from(competences)
     .where(
       and(
-        // parent && parent.parents ? arrayContains(competences.parents, [...parent.parents, parent.id].filter(Boolean)) : isNull(competences.competenceId),
-        competenceId ? eq(competences.competenceId, competenceId) : isNull(competences.competenceId),
-        // ...(search ? [sql`to_tsvector('german', ${competences.name}) @@ websearch_to_tsquery('german', ${search})`] : []),
+        search ? undefined : competenceId ? eq(competences.competenceId, competenceId) : isNull(competences.competenceId),
         isNull(competences.deletedAt),
         eq(competences.organisationId, secure.organisationId)
       )
@@ -54,9 +51,7 @@ export default defineEventHandler(async (event) => {
     let miniSearch = new MiniSearch({
       fields: ["name"], // fields to index for full-text search
       storeFields: ["id", "name"], // fields to return with search results
-      searchOptions: {
-        fuzzy: 0.49
-      }
+      searchOptions: { fuzzy: 0.49, prefix: true }
     })
 
     // Index all documents
