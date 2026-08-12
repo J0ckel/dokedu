@@ -249,6 +249,7 @@ export default defineEventHandler(async (event) => {
     school_name: school?.name ?? "N/A",
     has_logo: !!school?.logoFileId,
     show_cover_page: (report?.content as any)?.showCoverPage ?? true,
+    cover_header_size: (report?.content as any)?.coverHeaderSize ?? "normal",
     competences: competencesData
   }
 
@@ -319,28 +320,32 @@ margin: (
 )
 
 #if data.show_cover_page [
-  #v(10%)
+  #if data.cover_header_size == "compact" {
+    v(4%)
+  } else {
+    v(10%)
+  }
 
 
   #if data.has_logo {
-    align(center, image("logo.png", width: 25%))
+    align(center, image("logo.png", width: if data.cover_header_size == "compact" { 18% } else { 25% }))
   } else {
     align(center, rect(width: 40%, height: 25%, fill: rgb(200, 200, 200)))
   }
 
   // #show par: set block(above: 1em, below: 1em)
-  #v(1em)
+  #v(if data.cover_header_size == "compact" { 0.5em } else { 1em })
 
-  #align(center, text(size: 16pt, weight: "medium", data.school_name))
+  #align(center, text(size: if data.cover_header_size == "compact" { 13pt } else { 16pt }, weight: "medium", data.school_name))
 
-  #align(center, text(size: 12pt, weight: "regular", "Ersatzschule in freier Trägerschaft"))
+  #align(center, text(size: if data.cover_header_size == "compact" { 10pt } else { 12pt }, weight: "regular", "Ersatzschule in freier Trägerschaft"))
 
-  #show heading: set block(above: 1.3em, below: 0.9em)
+  #show heading: set block(above: if data.cover_header_size == "compact" { 0.8em } else { 1.3em }, below: if data.cover_header_size == "compact" { 0.5em } else { 0.9em })
 
-  #align(center, text(size: 20pt, weight: "medium", heading(upper("Lernstandsbericht"))))
+  #align(center, text(size: if data.cover_header_size == "compact" { 17pt } else { 20pt }, weight: "medium", heading(upper("Lernstandsbericht"))))
 
   // Remove deprecated syntax - just use set par directly
-  #set par(spacing: 1em)
+  #set par(spacing: if data.cover_header_size == "compact" { 0.6em } else { 1em })
 
   #grid(
     columns: (1fr, 1fr),
@@ -351,9 +356,9 @@ margin: (
 
   \
 
-  #align(center, text(size: 14pt, weight: "bold", full_name))
+  #align(center, text(size: if data.cover_header_size == "compact" { 12pt } else { 14pt }, weight: "bold", full_name))
 
-  #align(center, text(size: 10pt, weight: "regular", [
+  #align(center, text(size: if data.cover_header_size == "compact" { 9pt } else { 10pt }, weight: "regular", [
       geboren am #birth_date in #birth_place
   ]))
 

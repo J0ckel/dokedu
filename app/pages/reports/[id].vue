@@ -9,6 +9,12 @@ const { data: competences } = await useFetch(`/api/competences`)
 const reportContent = report.value?.content as any
 const selectedCompetences = ref<string[]>(reportContent?.competences ?? [])
 const showCoverPage = ref<boolean>(reportContent?.showCoverPage ?? true)
+const coverHeaderSize = ref<"normal" | "compact">(reportContent?.coverHeaderSize ?? "normal")
+
+const coverHeaderSizeOptions = [
+  { value: "normal", display: "Normal" },
+  { value: "compact", display: "Kompakt" }
+]
 
 function toggleCompetence(competenceId: string) {
   if (selectedCompetences.value.includes(competenceId)) {
@@ -71,7 +77,8 @@ async function save() {
       schoolYear: schoolYear.value,
       introduction: header.value,
       competences: selectedCompetences.value,
-      showCoverPage: showCoverPage.value
+      showCoverPage: showCoverPage.value,
+      coverHeaderSize: coverHeaderSize.value
     }
   })
 
@@ -111,6 +118,11 @@ async function downloadReport() {
 
             <div class="flex w-full flex-col gap-2">
               <DToggle v-model="showCoverPage"> Deckblatt anzeigen </DToggle>
+            </div>
+
+            <div>
+              <DLabel class="mb-1">Kopf des Deckblatts</DLabel>
+              <DSelect v-model="coverHeaderSize" :options="coverHeaderSizeOptions" placeholder="Größe des Deckblattkopfs" />
             </div>
 
             <div class="grid grid-cols-2 gap-4">
