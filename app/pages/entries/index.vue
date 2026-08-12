@@ -7,7 +7,9 @@ import { nanoid } from "nanoid"
 // Reactive state
 const search = ref("")
 const limit = 25
-const offset = ref(0)
+const savedOffset = useSessionStorage("entries/offset", 0)
+const savedScrollTop = useSessionStorage("entries/scrollTop", 0)
+const offset = ref(savedOffset.value)
 const isLoading = ref(false)
 const hasNextPage = ref(true)
 
@@ -58,30 +60,52 @@ const fetchEntries = async () => {
   }
 }
 
+const pageContent = useTemplateRef<HTMLElement>("content")
+
+async function restoreEntries() {
+  const targetOffset = savedOffset.value
+  offset.value = 0
+  await fetchEntries()
+
+  while (offset.value < targetOffset && hasNextPage.value) {
+    offset.value += limit
+    await fetchEntries()
+  }
+
+  await nextTick()
+  if (pageContent.value) {
+    pageContent.value.scrollTop = savedScrollTop.value
+  }
+}
+
 // Initial load
-await fetchEntries()
+await restoreEntries()
 
 // Watchers
 watch([search, filterByStudent, filterByTag, sortBy, sortOrder, filterByTeacher], () => {
   offset.value = 0
+  savedOffset.value = 0
+  savedScrollTop.value = 0
   fetchEntries()
 })
 
-watch(search, fetchEntries)
-
 // Infinite scroll
-const pageContent = useTemplateRef<HTMLElement>("content")
-
 useInfiniteScroll(
   pageContent,
   () => {
     if (hasNextPage.value && !isLoading.value) {
       offset.value += limit
+      savedOffset.value = offset.value
       fetchEntries()
     }
   },
   { distance: 25 }
 )
+
+function saveListPosition() {
+  savedOffset.value = offset.value
+  savedScrollTop.value = pageContent.value?.scrollTop ?? 0
+}
 
 // Helper functions
 const fullName = (user: DUser) => `${user.firstName} ${user.lastName}`
@@ -204,6 +228,7 @@ async function exportEntries() {
       <RouterLink
         :to="`/entries/${entry.id}`"
         v-for="entry in entries"
+        @click="saveListPosition"
         class="grid items-center justify-between gap-4 rounded px-2 py-2 hover:bg-neutral-100"
         :style="{ gridTemplateColumns: '4fr 1fr 120px 110px 110px' }"
       >
