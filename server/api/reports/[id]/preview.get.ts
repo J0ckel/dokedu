@@ -248,6 +248,7 @@ export default defineEventHandler(async (event) => {
     description: (report?.content as any)?.introduction ?? "N/A",
     school_name: school?.name ?? "N/A",
     has_logo: !!school?.logoFileId,
+    show_cover_page: (report?.content as any)?.showCoverPage ?? true,
     competences: competencesData
   }
 
@@ -317,45 +318,47 @@ margin: (
   ]
 )
 
-#v(10%)
+#if data.show_cover_page [
+  #v(10%)
 
 
-#if data.has_logo {
-  align(center, image("logo.png", width: 25%))
-} else {
-  align(center, rect(width: 40%, height: 25%, fill: rgb(200, 200, 200)))
-}
+  #if data.has_logo {
+    align(center, image("logo.png", width: 25%))
+  } else {
+    align(center, rect(width: 40%, height: 25%, fill: rgb(200, 200, 200)))
+  }
 
-// #show par: set block(above: 1em, below: 1em)
-#v(1em)
+  // #show par: set block(above: 1em, below: 1em)
+  #v(1em)
 
-#align(center, text(size: 16pt, weight: "medium", data.school_name))
+  #align(center, text(size: 16pt, weight: "medium", data.school_name))
 
-#align(center, text(size: 12pt, weight: "regular", "Ersatzschule in freier Trägerschaft"))
+  #align(center, text(size: 12pt, weight: "regular", "Ersatzschule in freier Trägerschaft"))
 
-#show heading: set block(above: 1.3em, below: 0.9em)
+  #show heading: set block(above: 1.3em, below: 0.9em)
 
-#align(center, text(size: 20pt, weight: "medium", heading(upper("Lernstandsbericht"))))
+  #align(center, text(size: 20pt, weight: "medium", heading(upper("Lernstandsbericht"))))
 
-// Remove deprecated syntax - just use set par directly
-#set par(spacing: 1em)
+  // Remove deprecated syntax - just use set par directly
+  #set par(spacing: 1em)
 
-#grid(
-  columns: (1fr, 1fr),
-  align: center,
-  [Schuljahr #school_year],
-  [Jahrgang #student_class],
-)
+  #grid(
+    columns: (1fr, 1fr),
+    align: center,
+    [Schuljahr #school_year],
+    [Jahrgang #student_class],
+  )
 
-\
+  \
 
-#align(center, text(size: 14pt, weight: "bold", full_name))
+  #align(center, text(size: 14pt, weight: "bold", full_name))
 
-#align(center, text(size: 10pt, weight: "regular", [
-    geboren am #birth_date in #birth_place
-]))
+  #align(center, text(size: 10pt, weight: "regular", [
+      geboren am #birth_date in #birth_place
+  ]))
 
-\
+  \
+]
 
 // Remove deprecated show par: set block syntax
 #set par(spacing: 1.25em)

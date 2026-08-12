@@ -59,6 +59,8 @@ const { files, open, reset, onCancel, onChange } = useFileDialog({
   directory: false // Select directories instead of files if set true
 })
 
+const isUploadingLogo = ref(false)
+
 async function uploadLogo() {
   open()
 }
@@ -67,17 +69,24 @@ onChange(async (files) => {
   if (!files || files.length !== 1) return
 
   const file = files[0]
+  isUploadingLogo.value = true
 
-  const formData = new FormData()
-  formData.append("file", file as Blob)
+  try {
+    const formData = new FormData()
+    formData.append("file", file as Blob)
 
-  const { data } = await useFetch("/api/organisation/logo", {
-    method: "POST",
-    body: formData
-  })
+    await $fetch("/api/organisation/logo", {
+      method: "POST",
+      body: formData
+    })
 
-  reset()
-  await refresh()
+    await refresh()
+  } catch (error: any) {
+    console.error("Logo upload failed:", error)
+  } finally {
+    isUploadingLogo.value = false
+    reset()
+  }
 })
 </script>
 
@@ -102,7 +111,9 @@ onChange(async (files) => {
           <img v-if="organisation.logo" class="size-36 bg-black object-cover" :src="`/api/organisation/logo`" alt="Logo" />
         </div>
         <div>
-          <DButton :icon-left="UploadIcon" @click="uploadLogo">Logo hochladen</DButton>
+          <DButton :icon-left="UploadIcon" @click="uploadLogo" :disabled="isUploadingLogo">
+            {{ isUploadingLogo ? "Lädt..." : "Logo hochladen" }}
+          </DButton>
         </div>
       </div>
     </DPageContent>

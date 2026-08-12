@@ -8,6 +8,7 @@ const { data: competences } = await useFetch(`/api/competences`)
 
 const reportContent = report.value?.content as any
 const selectedCompetences = ref<string[]>(reportContent?.competences ?? [])
+const showCoverPage = ref<boolean>(reportContent?.showCoverPage ?? true)
 
 function toggleCompetence(competenceId: string) {
   if (selectedCompetences.value.includes(competenceId)) {
@@ -69,9 +70,12 @@ async function save() {
       status: status.value,
       schoolYear: schoolYear.value,
       introduction: header.value,
-      competences: selectedCompetences.value
+      competences: selectedCompetences.value,
+      showCoverPage: showCoverPage.value
     }
   })
+
+  lastHash.value = new Date().getTime().toString()
 }
 
 async function downloadReport() {
@@ -103,6 +107,10 @@ async function downloadReport() {
             <div>
               <DLabel class="mb-1">Status</DLabel>
               <DSelect v-model="status" :options="statusOptions" placeholder="Status" />
+            </div>
+
+            <div class="flex w-full flex-col gap-2">
+              <DToggle v-model="showCoverPage"> Deckblatt anzeigen </DToggle>
             </div>
 
             <div class="grid grid-cols-2 gap-4">

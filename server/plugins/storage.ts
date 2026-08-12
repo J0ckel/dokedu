@@ -3,9 +3,12 @@ import fsDriver from "unstorage/drivers/fs"
 
 export default defineNitroPlugin(() => {
   const storage = useStorage()
+  const config = useRuntimeConfig()
 
-  // return file storage for dev
-  if (process.dev) {
+  // Use filesystem storage if S3 is not configured
+  const hasS3Config = config.s3Endpoint && config.s3AccessKeyId && config.s3SecretAccessKey && config.s3Bucket
+
+  if (process.dev || !hasS3Config) {
     storage.mount(
       "files",
       fsDriver({
@@ -16,11 +19,11 @@ export default defineNitroPlugin(() => {
   }
 
   const driver = s3Driver({
-    accessKeyId: useRuntimeConfig().s3AccessKeyId,
-    secretAccessKey: useRuntimeConfig().s3SecretAccessKey,
-    endpoint: useRuntimeConfig().s3Endpoint,
-    bucket: useRuntimeConfig().s3Bucket,
-    region: useRuntimeConfig().s3Region
+    accessKeyId: config.s3AccessKeyId,
+    secretAccessKey: config.s3SecretAccessKey,
+    endpoint: config.s3Endpoint,
+    bucket: config.s3Bucket,
+    region: config.s3Region
   })
 
   storage.mount("files", driver)
