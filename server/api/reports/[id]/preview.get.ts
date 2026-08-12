@@ -48,36 +48,8 @@ export default defineEventHandler(async (event) => {
   let competencesData: any[] = []
   let entriesData: any[] = []
   const reportContent = report.content as any
-
-  if (reportContent?.includeEntries) {
-    const entryRows = await useDrizzle()
-      .select({
-        entryId: entries.id,
-        date: entries.date,
-        body: entries.body,
-        competenceId: userCompetences.competenceId,
-        competenceName: competences.name,
-        level: userCompetences.level
-      })
-      .from(entries)
-      .innerJoin(entryUsers, and(eq(entryUsers.entryId, entries.id), eq(entryUsers.userId, report.studentId), isNull(entryUsers.deletedAt)))
-      .leftJoin(userCompetences, and(eq(userCompetences.entryId, entries.id), eq(userCompetences.userId, report.studentId), isNull(userCompetences.deletedAt)))
-      .leftJoin(competences, and(eq(competences.id, userCompetences.competenceId), isNull(competences.deletedAt)))
-      .where(and(eq(entries.organisationId, secure.organisationId), isNull(entries.deletedAt), eq(entryUsers.organisationId, secure.organisationId)))
-      .orderBy(entries.date)
-
-    const entryMap = new Map<string, any>()
-    for (const row of entryRows) {
-      const current = entryMap.get(row.entryId) ?? { id: row.entryId, date: formatDate(row.date, "dd.MM.yyyy"), body: row.body, competences: [] }
-      if (row.competenceId && row.competenceName && row.level > 0) {
-        current.competences.push({ name: row.competenceName, level: row.level })
-      }
-      entryMap.set(row.entryId, current)
-    }
-    entriesData = [...entryMap.values()].filter((entry) => entry.competences.length > 0)
-  }
-
-  const selectedCompetenceIds = (report.content as any)?.competences || []
+  const selectedCompetenceIds = reportContent?.competences || []
+  const selectedCompetenceTreeIds = new Set<string>()
 
   if (selectedCompetenceIds.length > 0) {
     // Fetch all selected competences AND their children (recursively)
@@ -111,6 +83,7 @@ export default defineEventHandler(async (event) => {
       neededCompetenceIds.add(id)
       addChildrenRecursively(id)
     })
+    neededCompetenceIds.forEach((id) => selectedCompetenceTreeIds.add(id))
 
     // Filter to only needed competences
     const relevantCompetences = allCompetences.filter((c) => neededCompetenceIds.has(c.id))
@@ -237,6 +210,33 @@ export default defineEventHandler(async (event) => {
       .sort((a, b) => a.name.localeCompare(b.name))
 
     competencesData = subjects
+  }
+
+  if (reportContent?.includeEntries && selectedCompetenceTreeIds.size > 0) {
+    const entryRows = await useDrizzle()
+      .select({
+        entryId: entries.id,
+        date: entries.date,
+        body: entries.body,
+        competenceId: userCompetences.competenceId,
+        competenceName: competences.name,
+        level: userCompetences.level
+      })
+      .from(entries)
+      .innerJoin(entryUsers, and(eq(entryUsers.entryId, entries.id), eq(entryUsers.userId, report.studentId), isNull(entryUsers.deletedAt)))
+      .innerJoin(userCompetences, and(eq(userCompetences.entryId, entries.id), eq(userCompetences.userId, report.studentId), isNull(userCompetences.deletedAt)))
+      .innerJoin(competences, and(eq(competences.id, userCompetences.competenceId), isNull(competences.deletedAt)))
+      .where(and(eq(entries.organisationId, secure.organisationId), isNull(entries.deletedAt), eq(entryUsers.organisationId, secure.organisationId), inArray(userCompetences.competenceId, [...selectedCompetenceTreeIds])))
+      .orderBy(entries.date)
+
+    const entryMap = new Map<string, any>()
+    for (const row of entryRows) {
+      if (row.level < 1) continue
+      const current = entryMap.get(row.entryId) ?? { id: row.entryId, date: formatDate(row.date, "dd.MM.yyyy"), body: row.body, competences: [] }
+      current.competences.push({ name: row.competenceName, level: row.level })
+      entryMap.set(row.entryId, current)
+    }
+    entriesData = [...entryMap.values()]
   }
 
   // Fetch organization logo from storage if it exists
