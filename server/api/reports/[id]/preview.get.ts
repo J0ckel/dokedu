@@ -124,7 +124,7 @@ export default defineEventHandler(async (event) => {
             // Leaf node - actual competence
             const level = competenceLevels.get(competence.id) || 0
 
-            if (onlyLearnedCompetencesEnabled && level < learnedLevelThreshold) {
+            if (level < learnedLevelThreshold) {
               return null
             }
 
@@ -139,7 +139,7 @@ export default defineEventHandler(async (event) => {
             // Group node - has children
             const children = buildCompetenceTree(competence.id)
 
-            if (onlyLearnedCompetencesEnabled && children.length === 0) {
+            if (children.length === 0) {
               return null
             }
 
@@ -196,7 +196,7 @@ export default defineEventHandler(async (event) => {
           return result
         }
 
-        const flatCompetences = flattenCompetences(children).filter((item) => item.type === "group" || (item.level ?? 0) >= learnedLevelThreshold)
+        const flatCompetences = flattenCompetences(children)
 
         return {
           id: subject.id,
