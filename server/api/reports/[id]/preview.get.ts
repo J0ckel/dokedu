@@ -251,6 +251,7 @@ export default defineEventHandler(async (event) => {
     show_cover_page: (report?.content as any)?.showCoverPage ?? true,
     cover_header_size: (report?.content as any)?.coverHeaderSize ?? "normal",
     report_font_size: (report?.content as any)?.reportFontSize === "small" ? 9 : (report?.content as any)?.reportFontSize === "large" ? 13 : 11,
+    report_layout: (report?.content as any)?.reportLayout ?? "standard",
     competences: competencesData
   }
 
@@ -421,9 +422,11 @@ const TEMPLATE_COMPETENCES = `#pagebreak()
     ).flatten(),
   )
 
-  #context [
+  #if data.report_layout == "standard" {
+    #context [
       #if data.competences.len() > count.get().first() [
-        #pagebreak()
+          #pagebreak()
+      ]
     ]
-  ]
+  }
 ]`
