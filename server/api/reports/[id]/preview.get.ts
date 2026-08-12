@@ -422,11 +422,9 @@ const TEMPLATE_COMPETENCES = `#pagebreak()
     ).flatten(),
   )
 
-  #if data.report_layout == "standard" {
-    #context [
-      #if data.competences.len() > count.get().first() [
-          #pagebreak()
-      ]
+  #context [
+    #if data.report_layout == "standard" and data.competences.len() > count.get().first() [
+      #pagebreak()
     ]
-  }
+  ]
 ]`
