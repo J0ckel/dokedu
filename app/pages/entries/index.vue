@@ -60,7 +60,7 @@ const fetchEntries = async () => {
   }
 }
 
-const pageContent = useTemplateRef<HTMLElement>("content")
+const pageContent = useTemplateRef<{ scrollElement: HTMLElement | null }>("content")
 
 async function restoreEntries() {
   const targetOffset = savedOffset.value
@@ -73,8 +73,8 @@ async function restoreEntries() {
   }
 
   await nextTick()
-  if (pageContent.value) {
-    pageContent.value.scrollTop = savedScrollTop.value
+  if (pageContent.value?.scrollElement) {
+    pageContent.value.scrollElement.scrollTop = savedScrollTop.value
   }
 }
 
@@ -104,7 +104,7 @@ useInfiniteScroll(
 
 function saveListPosition() {
   savedOffset.value = offset.value
-  savedScrollTop.value = pageContent.value?.scrollTop ?? 0
+  savedScrollTop.value = pageContent.value?.scrollElement?.scrollTop ?? 0
 }
 
 // Helper functions
