@@ -9,6 +9,7 @@ const search = ref("")
 const limit = 25
 const savedOffset = useSessionStorage("entries/offset", 0)
 const savedScrollTop = useSessionStorage("entries/scrollTop", 0)
+const savedEntryId = useSessionStorage<string | null>("entries/entryId", null)
 const offset = ref(savedOffset.value)
 const isLoading = ref(false)
 const hasNextPage = ref(true)
@@ -73,7 +74,10 @@ async function restoreEntries() {
   }
 
   await nextTick()
-  if (pageContent.value?.scrollElement) {
+  const targetEntry = savedEntryId.value ? document.querySelector(`[data-entry-id="${savedEntryId.value}"]`) : null
+  if (targetEntry) {
+    targetEntry.scrollIntoView({ block: "center" })
+  } else if (pageContent.value?.scrollElement) {
     pageContent.value.scrollElement.scrollTop = savedScrollTop.value
   }
 }
@@ -86,6 +90,7 @@ watch([search, filterByStudent, filterByTag, sortBy, sortOrder, filterByTeacher]
   offset.value = 0
   savedOffset.value = 0
   savedScrollTop.value = 0
+  savedEntryId.value = null
   fetchEntries()
 })
 
@@ -105,6 +110,11 @@ useInfiniteScroll(
 function saveListPosition() {
   savedOffset.value = offset.value
   savedScrollTop.value = pageContent.value?.scrollElement?.scrollTop ?? 0
+}
+
+function saveEntryPosition(entryId: string) {
+  savedEntryId.value = entryId
+  saveListPosition()
 }
 
 // Helper functions
@@ -228,7 +238,8 @@ async function exportEntries() {
       <RouterLink
         :to="`/entries/${entry.id}`"
         v-for="entry in entries"
-        @click="saveListPosition"
+        :data-entry-id="entry.id"
+        @click="saveEntryPosition(entry.id)"
         class="grid items-center justify-between gap-4 rounded px-2 py-2 hover:bg-neutral-100"
         :style="{ gridTemplateColumns: '4fr 1fr 120px 110px 110px' }"
       >
