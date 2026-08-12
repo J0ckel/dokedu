@@ -10,10 +10,17 @@ const reportContent = report.value?.content as any
 const selectedCompetences = ref<string[]>(reportContent?.competences ?? [])
 const showCoverPage = ref<boolean>(reportContent?.showCoverPage ?? true)
 const coverHeaderSize = ref<"normal" | "compact">(reportContent?.coverHeaderSize ?? "normal")
+const reportFontSize = ref<"small" | "normal" | "large">(reportContent?.reportFontSize ?? "normal")
 
 const coverHeaderSizeOptions = [
   { value: "normal", display: "Normal" },
   { value: "compact", display: "Kompakt" }
+]
+
+const reportFontSizeOptions = [
+  { value: "small", display: "Klein" },
+  { value: "normal", display: "Normal" },
+  { value: "large", display: "Groß" }
 ]
 
 function toggleCompetence(competenceId: string) {
@@ -78,7 +85,8 @@ async function save() {
       introduction: header.value,
       competences: selectedCompetences.value,
       showCoverPage: showCoverPage.value,
-      coverHeaderSize: coverHeaderSize.value
+      coverHeaderSize: coverHeaderSize.value,
+      reportFontSize: reportFontSize.value
     }
   })
 
@@ -123,6 +131,11 @@ async function downloadReport() {
             <div>
               <DLabel class="mb-1">Kopf des Deckblatts</DLabel>
               <DSelect v-model="coverHeaderSize" :options="coverHeaderSizeOptions" placeholder="Größe des Deckblattkopfs" />
+            </div>
+
+            <div>
+              <DLabel class="mb-1">Schriftgröße der PDF</DLabel>
+              <DSelect v-model="reportFontSize" :options="reportFontSizeOptions" placeholder="Schriftgröße" />
             </div>
 
             <div class="grid grid-cols-2 gap-4">

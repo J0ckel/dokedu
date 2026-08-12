@@ -250,6 +250,7 @@ export default defineEventHandler(async (event) => {
     has_logo: !!school?.logoFileId,
     show_cover_page: (report?.content as any)?.showCoverPage ?? true,
     cover_header_size: (report?.content as any)?.coverHeaderSize ?? "normal",
+    report_font_size: (report?.content as any)?.reportFontSize === "small" ? 9 : (report?.content as any)?.reportFontSize === "large" ? 13 : 11,
     competences: competencesData
   }
 
@@ -367,7 +368,7 @@ margin: (
 
 // Remove deprecated show par: set block syntax
 #set par(spacing: 1.25em)
-#set text(size: 11pt)
+#set text(size: data.report_font_size * 1pt)
 #set par(justify: true)
 
 
@@ -381,7 +382,7 @@ margin: (
 `
 
 const TEMPLATE_COMPETENCES = `#pagebreak()
-#set text(size: 9pt)
+#set text(size: data.report_font_size * 0.82pt)
 
 #let count = counter("count")
 #let n = 0
@@ -395,7 +396,7 @@ const TEMPLATE_COMPETENCES = `#pagebreak()
     fill: (_, row) => if calc.even(row) { rgb(subject.color) } else { white },
     stroke: rgb(subject.color200),
     align: horizon,
-    text(size: 9pt + 2pt, fill: rgb(subject.color900), [*#subject.name*]), text(size: 9pt + 2pt, fill: rgb(subject.color900),[*Niveau*]),
+    text(size: data.report_font_size * 0.82pt + 2pt, fill: rgb(subject.color900), [*#subject.name*]), text(size: data.report_font_size * 0.82pt + 2pt, fill: rgb(subject.color900),[*Niveau*]),
     ..subject.competences.map(row => (
       text(fill: rgb(subject.color900),[#row.name]),
       align(center, grid(columns: (auto, auto, auto), gutter: 2pt, inset: 0pt, align: bottom, 
