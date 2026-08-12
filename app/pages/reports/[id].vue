@@ -12,6 +12,7 @@ const showCoverPage = ref<boolean>(reportContent?.showCoverPage ?? true)
 const coverHeaderSize = ref<"normal" | "compact">(reportContent?.coverHeaderSize ?? "normal")
 const reportFontSize = ref<"small" | "normal" | "large">(reportContent?.reportFontSize ?? "normal")
 const reportLayout = ref<"standard" | "compact">(reportContent?.reportLayout ?? "standard")
+const includeEntries = ref<boolean>(reportContent?.includeEntries ?? false)
 
 const coverHeaderSizeOptions = [
   { value: "normal", display: "Normal" },
@@ -93,7 +94,8 @@ async function save() {
       showCoverPage: showCoverPage.value,
       coverHeaderSize: coverHeaderSize.value,
       reportFontSize: reportFontSize.value,
-      reportLayout: reportLayout.value
+      reportLayout: reportLayout.value,
+      includeEntries: includeEntries.value
     }
   })
 
@@ -148,6 +150,10 @@ async function downloadReport() {
             <div>
               <DLabel class="mb-1">Layout der Kompetenzübersicht</DLabel>
               <DSelect v-model="reportLayout" :options="reportLayoutOptions" placeholder="Layout" />
+            </div>
+
+            <div class="flex w-full flex-col gap-2">
+              <DToggle v-model="includeEntries">Einträge mit Kompetenzen und Niveau ausgeben</DToggle>
             </div>
 
             <div class="grid grid-cols-2 gap-4">

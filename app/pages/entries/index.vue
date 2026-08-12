@@ -74,6 +74,10 @@ async function restoreEntries() {
   }
 
   await nextTick()
+  restoreScrollPosition()
+}
+
+function restoreScrollPosition() {
   const targetEntry = savedEntryId.value ? document.querySelector(`[data-entry-id="${savedEntryId.value}"]`) : null
   if (targetEntry) {
     targetEntry.scrollIntoView({ block: "center" })
@@ -84,6 +88,11 @@ async function restoreEntries() {
 
 // Initial load
 await restoreEntries()
+onMounted(() => {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(restoreScrollPosition)
+  })
+})
 
 // Watchers
 watch([search, filterByStudent, filterByTag, sortBy, sortOrder, filterByTeacher], () => {

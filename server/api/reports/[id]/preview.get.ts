@@ -3,7 +3,7 @@ import { de } from "date-fns/locale"
 import { formatDate } from "date-fns"
 import { z } from "zod"
 import sharp from "sharp"
-import { competences, userCompetences } from "~~/server/database/schema"
+import { competences, entries, entryUsers, userCompetences } from "~~/server/database/schema"
 import { colors } from "~~/packages/report_generation/utils/color.json"
 import { and, eq, inArray, isNull, desc } from "drizzle-orm"
 import { typstRenderTemplate } from "~~/server/utils/typst"
@@ -46,6 +46,37 @@ export default defineEventHandler(async (event) => {
 
   // Fetch competences data if selected in report
   let competencesData: any[] = []
+  let entriesData: any[] = []
+  const reportContent = report.content as any
+
+  if (reportContent?.includeEntries) {
+    const entryRows = await useDrizzle()
+      .select({
+        entryId: entries.id,
+        date: entries.date,
+        body: entries.body,
+        competenceId: userCompetences.competenceId,
+        competenceName: competences.name,
+        level: userCompetences.level
+      })
+      .from(entries)
+      .innerJoin(entryUsers, and(eq(entryUsers.entryId, entries.id), eq(entryUsers.userId, report.studentId), isNull(entryUsers.deletedAt)))
+      .leftJoin(userCompetences, and(eq(userCompetences.entryId, entries.id), eq(userCompetences.userId, report.studentId), isNull(userCompetences.deletedAt)))
+      .leftJoin(competences, and(eq(competences.id, userCompetences.competenceId), isNull(competences.deletedAt)))
+      .where(and(eq(entries.organisationId, secure.organisationId), isNull(entries.deletedAt), eq(entryUsers.organisationId, secure.organisationId)))
+      .orderBy(entries.date)
+
+    const entryMap = new Map<string, any>()
+    for (const row of entryRows) {
+      const current = entryMap.get(row.entryId) ?? { id: row.entryId, date: formatDate(row.date, "dd.MM.yyyy"), body: row.body, competences: [] }
+      if (row.competenceId && row.competenceName && row.level > 0) {
+        current.competences.push({ name: row.competenceName, level: row.level })
+      }
+      entryMap.set(row.entryId, current)
+    }
+    entriesData = [...entryMap.values()].filter((entry) => entry.competences.length > 0)
+  }
+
   const selectedCompetenceIds = (report.content as any)?.competences || []
 
   if (selectedCompetenceIds.length > 0) {
@@ -225,7 +256,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Prepare the template content
-  const templateContent = competencesData.length > 0 ? TEMPLATE + "\n\n" + TEMPLATE_COMPETENCES : TEMPLATE
+  const templateContent = `${TEMPLATE}${competencesData.length > 0 ? "\n\n" + TEMPLATE_COMPETENCES : ""}${entriesData.length > 0 ? "\n\n" + TEMPLATE_ENTRIES : ""}`
 
   // Prepare the data
   const templateData = {
@@ -245,7 +276,8 @@ export default defineEventHandler(async (event) => {
     cover_header_size: (report?.content as any)?.coverHeaderSize ?? "normal",
     report_font_size: (report?.content as any)?.reportFontSize === "small" ? 9 : (report?.content as any)?.reportFontSize === "large" ? 13 : 11,
     report_layout: (report?.content as any)?.reportLayout ?? "standard",
-    competences: competencesData
+    competences: competencesData,
+    entries: entriesData
   }
 
   let pdfBuffer: Buffer
@@ -420,4 +452,21 @@ const TEMPLATE_COMPETENCES = `#pagebreak()
       #pagebreak()
     ]
   ]
+]`
+
+const TEMPLATE_ENTRIES = `#pagebreak()
+#heading(level: 1)[Einträge und zugeordnete Kompetenzen]
+
+#for entry in data.entries [
+  #heading(level: 2)[#entry.date]
+  #if entry.body != "" [
+    #entry.body
+  ]
+
+  #set par(spacing: 0.35em)
+  #for competence in entry.competences [
+    #competence.name - Niveau #competence.level \\
+  ]
+
+  #v(0.8em)
 ]`
