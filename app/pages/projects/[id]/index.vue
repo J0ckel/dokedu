@@ -1,10 +1,23 @@
 <script setup lang="ts">
 import { formatDate } from "@vueuse/core"
-import { ArrowRightIcon, Edit2Icon, Trash2Icon, XIcon } from "lucide-vue-next"
+import { ArrowRightIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-vue-next"
 
 const id = useRouteParams<string>("id")
 
 const { data: event } = await useFetch(`/api/events/${id.value}`)
+const { data: eventCompetences, refresh: refreshEventCompetences } = await useFetch(`/api/events/${id.value}/competences`)
+const showCompetenceModal = ref(false)
+const selectedCompetences = computed(() => (eventCompetences.value ?? []).map((competence) => competence.competenceId))
+
+async function toggleCompetence(competence: any) {
+  const isSelected = selectedCompetences.value.includes(competence.id)
+  if (isSelected) {
+    await $fetch(`/api/events/${id.value}/competences/${competence.id}`, { method: "DELETE" })
+  } else {
+    await $fetch(`/api/events/${id.value}/competences`, { method: "POST", body: { competenceId: competence.id } })
+  }
+  await refreshEventCompetences()
+}
 
 const name = computed({
   get: () => event.value?.title,
@@ -107,11 +120,23 @@ async function deleteEvent() {
           <d-input v-model="endsAt" type="date" placeholder="Enddatum" />
         </div>
 
-        <div class="mt-8 rounded-md bg-orange-100 p-4 text-sm text-orange-700">
-          <div class="mb-2 font-bold text-orange-900">Kompetenzen</div>
-          <div>Derzeit werden die Kompetenzen nicht geladen, wir arbeiten daran, dass sie wieder angezeigt werden.</div>
+        <div class="mt-8 rounded-md border border-neutral-200 p-4 text-sm text-neutral-700">
+          <div class="mb-3 flex items-center justify-between">
+            <div class="font-bold text-neutral-900">Kompetenzen</div>
+            <DButton :icon-left="PlusIcon" variant="secondary" @click="showCompetenceModal = true">Hinzufügen</DButton>
+          </div>
+          <div v-if="eventCompetences?.length" class="flex flex-wrap gap-2">
+            <DTag v-for="competence in eventCompetences" :key="competence.competenceId" :color="competence.color ?? 'gray'">
+              {{ competence.name }}
+            </DTag>
+          </div>
+          <div v-else class="text-neutral-500">Noch keine Kompetenzen zugeordnet.</div>
         </div>
       </div>
     </DPageContent>
+
+    <DModal v-if="showCompetenceModal" titel="Kompetenzen" @close="showCompetenceModal = false" @confirm="showCompetenceModal = false">
+      <DCompetenceSearch :selected="selectedCompetences" @toggle="toggleCompetence" />
+    </DModal>
   </DPage>
 </template>
