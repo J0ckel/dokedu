@@ -1,4 +1,4 @@
-import { isNull, arrayContains, desc, asc } from "drizzle-orm"
+import { isNull, desc, asc, and, eq } from "drizzle-orm"
 import { competences } from "~~/server/database/schema"
 import MiniSearch from "minisearch"
 import { z } from "zod"
@@ -35,20 +35,72 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const result = await useDrizzle()
-    .select()
-    .from(competences)
-    .where(
-      and(
-        // parent && parent.parents ? arrayContains(competences.parents, [...parent.parents, parent.id].filter(Boolean)) : isNull(competences.competenceId),
-        competenceId ? eq(competences.competenceId, competenceId) : isNull(competences.competenceId),
-        // ...(search ? [sql`to_tsvector('german', ${competences.name}) @@ websearch_to_tsquery('german', ${search})`] : []),
-        isNull(competences.deletedAt),
-        eq(competences.organisationId, secure.organisationId)
+  let result
+  let subjectNames = new Map<string, string>()
+  let groupNames = new Map<string, string>()
+
+  if (search) {
+    const allCompetences = await useDrizzle()
+      .select()
+      .from(competences)
+      .where(and(isNull(competences.deletedAt), eq(competences.organisationId, secure.organisationId)))
+
+    let scopedCompetences = allCompetences
+    if (competenceId) {
+      const descendantIds = new Set([competenceId])
+      let changed = true
+
+      while (changed) {
+        changed = false
+        for (const competence of allCompetences) {
+          if (competence.competenceId && descendantIds.has(competence.competenceId) && !descendantIds.has(competence.id)) {
+            descendantIds.add(competence.id)
+            changed = true
+          }
+        }
+      }
+
+      scopedCompetences = allCompetences.filter((competence) => competence.id !== competenceId && competence.competenceId && descendantIds.has(competence.id))
+    }
+
+    const competenceById = new Map(allCompetences.map((competence) => [competence.id, competence]))
+    for (const competence of allCompetences) {
+      let current = competence
+      const visited = new Set<string>()
+
+      while (current && !visited.has(current.id)) {
+        if (current.id !== competence.id && current.competenceType === "group" && !groupNames.has(competence.id)) {
+          groupNames.set(competence.id, current.name)
+        }
+        if (current.competenceType === "subject") {
+          subjectNames.set(competence.id, current.name)
+          break
+        }
+
+        visited.add(current.id)
+        current = current.competenceId ? competenceById.get(current.competenceId) : undefined
+      }
+    }
+
+    result = scopedCompetences
+      .sort((first, second) => {
+        if (first.competenceType !== second.competenceType) return first.competenceType < second.competenceType ? 1 : -1
+        return first.name.localeCompare(second.name)
+      })
+      .slice(0, 2500)
+  } else {
+    result = await useDrizzle()
+      .select()
+      .from(competences)
+      .where(
+        and(
+          competenceId ? eq(competences.competenceId, competenceId) : isNull(competences.competenceId),
+          isNull(competences.deletedAt),
+          eq(competences.organisationId, secure.organisationId)
+        )
       )
-    )
-    .orderBy(desc(competences.competenceType), asc(competences.name))
-    .limit(2500)
+      .orderBy(desc(competences.competenceType), asc(competences.name))
+      .limit(2500)
 
   if (search) {
     let miniSearch = new MiniSearch({
@@ -68,7 +120,11 @@ export default defineEventHandler(async (event) => {
     const items = result.filter((c) => results.find((el) => el.id === c.id))
 
     // .orderBy(desc(competences.competenceType), asc(competences.name))
-    return items.slice(0, 100)
+    return items.slice(0, 100).map((competence) => ({
+      ...competence,
+      subjectName: subjectNames.get(competence.id),
+      groupName: groupNames.get(competence.id)
+    }))
   } else {
     return result.slice(0, 100)
   }

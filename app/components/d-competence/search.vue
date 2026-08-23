@@ -6,9 +6,21 @@ const emit = defineEmits(["toggle"])
 
 interface Props {
   selected: string[]
+  students: { id: string; name: string }[]
 }
 
 const props = defineProps<Props>()
+const studentLevels = ref<Record<string, Record<string, number | null>>>({})
+const competenceHistories = ref<Record<string, Record<string, any[]>>>({})
+const expandedHistoryId = ref<string | null>(null)
+
+onMounted(async () => {
+  const levels = await Promise.all(props.students.map(async (student) => {
+    const competences = await $fetch<any[]>(`/api/users/${student.id}/competences`, { params: { all: true } })
+    return [student.id, Object.fromEntries(competences.map((competence) => [competence.id, competence.userLevel]))] as const
+  }))
+  studentLevels.value = Object.fromEntries(levels)
+})
 
 const navigationItems = ref<DCompetence[]>([])
 
@@ -31,6 +43,16 @@ const filtered = computed(() => competences.value)
 
 async function onClick(competence: DCompetence) {
   if (competence.competenceType == "competence") {
+    if (expandedHistoryId.value === competence.id) {
+      expandedHistoryId.value = null
+    } else {
+      const histories = await Promise.all(props.students.map(async (student) => {
+        const history = await $fetch<any[]>(`/api/users/${student.id}/competences/${competence.id}/history`)
+        return [student.id, history] as const
+      }))
+      competenceHistories.value[competence.id] = Object.fromEntries(histories)
+      expandedHistoryId.value = competence.id
+    }
     return emit("toggle", competence)
   }
   search.value = ""
@@ -60,6 +82,15 @@ function levels(competence: DCompetence) {
   return `${first} - ${last}`
 }
 
+function userLevel(studentId: string, competenceId: string) {
+  const level = studentLevels.value[studentId]?.[competenceId]
+  return level === null || level === undefined ? "-" : `${level}`
+}
+
+function historyDate(value: string) {
+  return new Date(value).toLocaleDateString("de-DE")
+}
+
 // fill-red-600 fill-orange-600 fill-amber-600 fill-yellow-600 fill-lime-600 fill-green-600 fill-emerald-600 fill-teal-600 fill-cyan-600 fill-sky-600 fill-blue-600 fill-indigo-600 fill-violet-600 fill-purple-600 fill-fuchsia-600 fill-pink-600 fill-rose-600
 // stroke-gray-600 stroke-red-600 stroke-orange-600 stroke-amber-600 stroke-yellow-600 stroke-lime-600 stroke-green-600 stroke-emerald-600 stroke-teal-600 stroke-cyan-600 stroke-sky-600 stroke-blue-600 stroke-indigo-600 stroke-violet-600 stroke-purple-600 stroke-fuchsia-600 stroke-pink-600 stroke-rose-600
 </script>
@@ -86,13 +117,12 @@ function levels(competence: DCompetence) {
       </template>
     </div>
     <div class="flex-1 divide-y divide-neutral-200 overflow-auto">
-      <div
-        v-for="competence in filtered"
-        :key="competence.id"
-        class="flex cursor-default items-start justify-between gap-2 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
-        @click="onClick(competence)"
-      >
-        <div class="flex items-start gap-1.5">
+      <template v-for="competence in filtered" :key="competence.id">
+        <div
+          class="flex cursor-default items-start justify-between gap-2 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
+          @click="onClick(competence)"
+        >
+          <div class="flex items-start gap-1.5">
           <FolderIcon
             v-if="competence.competenceType !== 'competence'"
             class="mt-0.5 size-4"
@@ -106,12 +136,27 @@ function levels(competence: DCompetence) {
             <CircleCheckIcon v-if="selected.includes(competence.id)" class="mt-0.5 size-4 text-blue-600" />
             <CircleIcon v-else class="mt-0.5 size-4 text-neutral-400" />
           </template>
-          <div class="flex-1">{{ competence.name }}</div>
+            <div class="flex-1">{{ competence.name }}</div>
+          </div>
+          <div class="flex shrink-0 flex-col items-end gap-0.5 text-xs text-neutral-500">
+            <span class="whitespace-nowrap">Kl. {{ levels(competence) }}</span>
+            <span v-for="student in props.students" :key="student.id" class="whitespace-nowrap">
+              {{ student.name }}: {{ userLevel(student.id, competence.id) }}
+            </span>
+          </div>
         </div>
-        <div class="cursor-default whitespace-nowrap text-neutral-500">
-          {{ levels(competence) }}
+        <div v-if="expandedHistoryId === competence.id" class="border-b border-neutral-200 bg-neutral-50 px-4 py-2 text-xs text-neutral-600">
+          <div v-for="student in props.students" :key="student.id" class="py-1">
+            <span class="font-medium">{{ student.name }}:</span>
+            <span v-if="competenceHistories[competence.id]?.[student.id]?.length">
+              <span v-for="(item, index) in competenceHistories[competence.id][student.id]" :key="item.id">
+                <span v-if="index > 0"> · </span>Niveau {{ item.level }} ({{ historyDate(item.createdAt) }})
+              </span>
+            </span>
+            <span v-else> noch kein Verlauf</span>
+          </div>
         </div>
-      </div>
+      </template>
       <div v-show="filtered?.length === 0" class="px-4 py-2">
         <div class="text-sm text-neutral-500">Keine Ergebnisse...</div>
       </div>

@@ -185,11 +185,6 @@ async function downloadReport() {
               </div>
             </div>
 
-            <div>
-              <DLabel class="mb-1">Schuljahr</DLabel>
-              <DInput type="text" v-model="schoolYear" placeholder="Schuljahr" class="w-full" />
-            </div>
-
             <div class="">
               <DLabel class="mb-1">Einleitung</DLabel>
               <textarea
@@ -207,7 +202,7 @@ async function downloadReport() {
                 </DButton>
               </div>
               <div class="rounded-md bg-neutral-100 p-2 text-sm text-neutral-500">
-                Wird eine Kompetenz ausgewählt, werden die entsprechenden Kompetenzen und Niveaus dafür mit ausgegeben.
+                Für {{ report?.student.firstName }} werden nur Kompetenzen angezeigt, die für die {{ report?.student.studentGrade }}. Klasse vorgesehen sind und mindestens mit Niveau 1 erreicht wurden.
               </div>
               <div class="flex flex-col gap-0.5">
                 <div

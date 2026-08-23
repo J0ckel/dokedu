@@ -9,7 +9,8 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed-demo": "bun run scripts/seed-demo.ts"
   },
   "dependencies": {
     "@libsql/client": "^0.15.6",

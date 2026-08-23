@@ -7,7 +7,8 @@ const routeParams = z.object({
 })
 
 const querySchema = z.object({
-  competenceId: z.string().optional()
+  competenceId: z.string().optional(),
+  all: z.coerce.boolean().optional().default(false)
 })
 
 export default defineEventHandler(async (event) => {
@@ -15,7 +16,7 @@ export default defineEventHandler(async (event) => {
   if (!secure) throw createError({ statusCode: 401, message: "Unauthorized" })
 
   const { id: userId } = await getValidatedRouterParams(event, routeParams.parse)
-  const { competenceId } = await getValidatedQuery(event, querySchema.parse)
+  const { competenceId, all } = await getValidatedQuery(event, querySchema.parse)
 
   // Verify user exists and belongs to the organisation
   const targetUser = await useDrizzle()
@@ -34,7 +35,7 @@ export default defineEventHandler(async (event) => {
     .from(competences)
     .where(
       and(
-        competenceId ? eq(competences.competenceId, competenceId) : isNull(competences.competenceId),
+          all ? undefined : competenceId ? eq(competences.competenceId, competenceId) : isNull(competences.competenceId),
         isNull(competences.deletedAt),
         eq(competences.organisationId, secure.organisationId)
       )

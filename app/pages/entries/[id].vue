@@ -36,6 +36,13 @@ const selectedUsers = computed(() => {
   return Array.from(new Set(values))
 })
 
+const entryStudents = computed(() =>
+  entry.value?.entryUsers?.map(({ user }) => ({
+    id: user.id,
+    name: `${user.firstName} ${user.lastName}`
+  })) ?? []
+)
+
 const selectedCompetences = computed(() => {
   const ucs = entry.value?.userCompetences?.map((c) => c.competenceId)
   return Array.from(new Set(ucs))
@@ -281,7 +288,7 @@ async function saveEntry() {
 
             <DModal titel="Kompetenzen" v-if="showCompetenceSearch" @close="showCompetenceSearch = false" @confirm="showCompetenceSearch = false">
               <template v-if="entry && entry.entryUsers && entry?.entryUsers?.length > 0">
-                <DCompetenceSearch :selected="selectedCompetences" @toggle="toggleUserCompetence" />
+                <DCompetenceSearch :selected="selectedCompetences" :students="entryStudents" @toggle="toggleUserCompetence" />
               </template>
               <template v-else>
                 <div class="p-4">

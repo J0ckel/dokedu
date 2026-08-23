@@ -85,8 +85,15 @@ export default defineEventHandler(async (event) => {
     })
     neededCompetenceIds.forEach((id) => selectedCompetenceTreeIds.add(id))
 
-    // Filter to only needed competences
-    const relevantCompetences = allCompetences.filter((c) => neededCompetenceIds.has(c.id))
+    const studentGrade = Number(report.student.studentGrade)
+
+    // Keep selected subjects and only include nodes whose grades cover the student's grade.
+    const relevantCompetences = allCompetences.filter((c) => {
+      if (!neededCompetenceIds.has(c.id)) return false
+      if (c.competenceType === "subject") return true
+      const grades = Array.isArray(c.grades) ? c.grades : []
+      return !studentGrade || grades.includes(studentGrade)
+    })
 
     // Fetch user competence levels for ALL relevant competences
     const userCompetenceLevels = await useDrizzle()
@@ -117,8 +124,6 @@ export default defineEventHandler(async (event) => {
       reportContentTyped?.onlyLearnedCompetences === 1 ||
       reportContentTyped?.onlyLearnedCompetences === "1"
     const onlyLearnedCompetencesEnabled = query.onlyLearnedCompetences ?? onlyLearnedFromReport
-    const learnedLevelThreshold = 1
-
     // Helper function to build competence tree recursively
     const buildCompetenceTree = (parentId: string | null): any[] => {
       return relevantCompetences
@@ -128,7 +133,7 @@ export default defineEventHandler(async (event) => {
             // Leaf node - actual competence
             const level = competenceLevels.get(competence.id) || 0
 
-            if (level < learnedLevelThreshold) {
+            if (level < 1) {
               return null
             }
 
