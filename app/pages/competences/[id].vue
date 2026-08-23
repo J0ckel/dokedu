@@ -15,12 +15,9 @@ const { data: competences, refresh } = await useFetch("/api/competences", {
 })
 
 const parent = await $fetch<{ name: string; competenceType: string; competenceId: string | null }>(`/api/competences/${id.value}`)
-const parentGroup = parent.competenceType === "group" && parent.competenceId
-  ? await $fetch<{ id: string; name: string }>(`/api/competences/${parent.competenceId}`)
-  : null
 const showGroup = parent.competenceType === "group"
-const groupName = parentGroup?.name
-const groupId = parentGroup?.id
+const groupName = showGroup ? parent.name : undefined
+const groupId = showGroup ? id.value : undefined
 </script>
 
 <template>
