@@ -48,7 +48,7 @@ const showFilterModal = ref(false)
       >
         <RouterLink :to="`/competences/${competence.id}`" class="line-clamp-1 text-sm text-neutral-700">
           <span v-if="competence.competenceType === 'competence'">{{ competence.name }}</span>
-          <DTag v-else class="w-fit" :color="competence.color ? competence.color : 'gray'">{{ competence.name }}</DTag>
+          <DTag v-else class="w-fit border border-neutral-200 shadow-sm" :color="competence.color ? competence.color : 'gray'">{{ competence.name }}</DTag>
         </RouterLink>
         <RouterLink v-if="search && competence.subjectId" :to="`/competences/${competence.subjectId}`" class="inline-flex max-w-full items-center rounded-md border border-neutral-200 bg-neutral-50 px-2 py-1 text-sm font-medium text-neutral-700 shadow-sm transition-colors hover:border-amber-300 hover:bg-amber-50 hover:text-amber-900">{{ competence.subjectName }}</RouterLink>
         <RouterLink v-if="search && competence.groupId" :to="`/competences/${competence.groupId}`" class="inline-flex max-w-full items-center rounded-md border border-neutral-200 bg-neutral-50 px-2 py-1 text-sm font-medium text-neutral-700 shadow-sm transition-colors hover:border-amber-300 hover:bg-amber-50 hover:text-amber-900">{{ competence.groupName }}</RouterLink>

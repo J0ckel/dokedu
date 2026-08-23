@@ -17,7 +17,7 @@ const { data: competences, refresh } = await useFetch("/api/competences", {
 const parent = await $fetch<{ name: string; competenceType: string; competenceId: string | null }>(`/api/competences/${id.value}`)
 const showGroup = parent.competenceType === "group"
 const groupName = showGroup ? parent.name : undefined
-const groupId = showGroup ? id.value : undefined
+const groupId = showGroup ? parent.competenceId : undefined
 </script>
 
 <template>
@@ -48,7 +48,7 @@ const groupId = showGroup ? id.value : undefined
       >
         <NuxtLink :to="competence.competenceType === 'competence' ? undefined : `/competences/${competence.id}`" class="line-clamp-1 text-sm text-neutral-700 cursor-default">
           <span v-if="competence.competenceType === 'competence'" class="cursor-default">{{ competence.name }}</span>
-          <DTag v-else class="w-fit cursor-default" :color="`gray`">{{ competence.name }}</DTag>
+          <DTag v-else class="w-fit cursor-default border border-neutral-200 shadow-sm" :color="`gray`">{{ competence.name }}</DTag>
         </NuxtLink>
         <RouterLink v-if="competence.subjectId" :to="`/competences/${competence.subjectId}`" class="inline-flex max-w-full items-center rounded-md border border-neutral-200 bg-neutral-50 px-2 py-1 text-sm font-medium text-neutral-700 shadow-sm transition-colors hover:border-amber-300 hover:bg-amber-50 hover:text-amber-900">{{ competence.subjectName }}</RouterLink>
         <RouterLink v-if="showGroup && (groupId || competence.groupId)" :to="`/competences/${groupId || competence.groupId}`" class="inline-flex max-w-full items-center rounded-md border border-neutral-200 bg-neutral-50 px-2 py-1 text-sm font-medium text-neutral-700 shadow-sm transition-colors hover:border-amber-300 hover:bg-amber-50 hover:text-amber-900">{{ groupName || competence.groupName }}</RouterLink>
