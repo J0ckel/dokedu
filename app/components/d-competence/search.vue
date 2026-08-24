@@ -10,9 +10,17 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const visibleSelected = ref<string[]>([...props.selected])
 const studentLevels = ref<Record<string, Record<string, number | null>>>({})
 const competenceHistories = ref<Record<string, Record<string, any[]>>>({})
 const expandedHistoryId = ref<string | null>(null)
+
+watch(
+  () => props.selected,
+  (selected) => {
+    visibleSelected.value = [...selected]
+  }
+)
 
 onMounted(async () => {
   const levels = await Promise.all(props.students.map(async (student) => {
@@ -43,6 +51,10 @@ const filtered = computed(() => competences.value)
 
 async function onClick(competence: DCompetence) {
   if (competence.competenceType == "competence") {
+    visibleSelected.value = visibleSelected.value.includes(competence.id)
+      ? visibleSelected.value.filter((id) => id !== competence.id)
+      : [...visibleSelected.value, competence.id]
+
     if (expandedHistoryId.value === competence.id) {
       expandedHistoryId.value = null
     } else {
@@ -128,6 +140,7 @@ function historyDate(value: string) {
       <template v-for="competence in filtered" :key="competence.id">
         <div
           class="flex cursor-default items-start justify-between gap-2 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
+          :class="visibleSelected.includes(competence.id) ? 'bg-blue-50 text-blue-900 hover:bg-blue-100' : ''"
           @click="onClick(competence)"
         >
           <div class="flex items-start gap-1.5">
@@ -141,7 +154,7 @@ function historyDate(value: string) {
             "
           />
           <template v-else>
-            <CircleCheckIcon v-if="selected.includes(competence.id)" class="mt-0.5 size-4 text-blue-600" />
+            <CircleCheckIcon v-if="visibleSelected.includes(competence.id)" class="mt-0.5 size-4 text-blue-600" />
             <CircleIcon v-else class="mt-0.5 size-4 text-neutral-400" />
           </template>
             <div class="flex-1">{{ competence.name }}</div>

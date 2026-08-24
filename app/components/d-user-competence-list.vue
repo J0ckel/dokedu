@@ -6,7 +6,7 @@ interface Props {
   userCompetences: any[]
 }
 
-const { entryId, userCompetences } = defineProps<Props>()
+const props = defineProps<Props>()
 const emit = defineEmits(["remove", "updateLevel"])
 
 async function remove(competence: DCompetence) {
@@ -14,7 +14,7 @@ async function remove(competence: DCompetence) {
 }
 
 const reduced = computed(() => {
-  return Array.from(new Map(userCompetences.map((uc) => [uc.competence.id, uc])).values())
+  return Array.from(new Map(props.userCompetences.map((uc) => [uc.competence.id, uc])).values())
 })
 
 async function levelChange(competenceId: string, level: number) {
