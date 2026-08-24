@@ -46,14 +46,22 @@ async function onClick(competence: DCompetence) {
     if (expandedHistoryId.value === competence.id) {
       expandedHistoryId.value = null
     } else {
-      const histories = await Promise.all(props.students.map(async (student) => {
-        const history = await $fetch<any[]>(`/api/users/${student.id}/competences/${competence.id}/history`)
-        return [student.id, history] as const
-      }))
-      competenceHistories.value[competence.id] = Object.fromEntries(histories)
       expandedHistoryId.value = competence.id
     }
-    return emit("toggle", competence)
+    emit("toggle", competence)
+
+    if (expandedHistoryId.value === competence.id) {
+      try {
+        const histories = await Promise.all(props.students.map(async (student) => {
+          const history = await $fetch<any[]>(`/api/users/${student.id}/competences/${competence.id}/history`)
+          return [student.id, history] as const
+        }))
+        competenceHistories.value[competence.id] = Object.fromEntries(histories)
+      } catch {
+        competenceHistories.value[competence.id] = {}
+      }
+    }
+    return
   }
   search.value = ""
   navigationItems.value.push(competence)

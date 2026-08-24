@@ -1,4 +1,4 @@
-import { isNull } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import { competences, entryUsers, userCompetences } from "~~/server/database/schema"
 
