@@ -4,6 +4,7 @@ import type { DCompetence } from "~/types/models"
 interface Props {
   entryId?: string
   userCompetences?: any[]
+  students?: { id: string; name: string }[]
 }
 
 const props = defineProps<Props>()
@@ -25,6 +26,11 @@ const reduced = computed(() => {
   })
 })
 
+function studentName(userCompetence: any) {
+  const user = userCompetence.user ?? props.students?.find((student) => student.id === userCompetence.userId)
+  return user ? ("name" in user ? user.name : `${user.firstName} ${user.lastName}`) : "Unbekannter Schüler"
+}
+
 async function levelChange(competenceId: string, level: number, userId?: string) {
   emit("updateLevel", competenceId, level, userId)
 }
@@ -37,6 +43,7 @@ async function levelChange(competenceId: string, level: number, userId?: string)
       <div v-for="userCompetence in reduced" :key="userCompetence.id">
         <DUserCompetence
           :userCompetence="userCompetence"
+          :student-name="studentName(userCompetence)"
           @remove="remove(userCompetence.competence, userCompetence.userId)"
           @levelChange="(level, userId) => levelChange(userCompetence.competenceId, level, userId ?? userCompetence.userId)"
         />

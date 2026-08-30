@@ -314,6 +314,7 @@ async function saveEntry() {
             <DUserCompetenceList
               :entryId="entry.id!"
               :user-competences="entry.userCompetences!"
+              :students="entryStudents"
               @remove="toggleUserCompetence"
               @update-level="updateUserCompetenceLevel"
             />

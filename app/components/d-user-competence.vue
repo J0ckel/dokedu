@@ -4,9 +4,10 @@ import type { DUserCompetence } from "~/types/models"
 
 interface Props {
   userCompetence: DUserCompetence
+  studentName: string
 }
 
-const { userCompetence } = defineProps<Props>()
+const { userCompetence, studentName } = defineProps<Props>()
 
 const competence = ref(null)
 const parents = ref([])
@@ -29,18 +30,15 @@ function removeCurrent() {
 <template>
   <div v-if="userCompetence" class="flex flex-col gap-1 rounded-md border border-neutral-200 bg-neutral-50 px-2 py-2">
     <div class="flex min-w-0 items-center gap-2">
-      <div class="min-w-0 flex-1 overflow-hidden">
+      <div class="min-w-0 flex-1">
         <div class="flex min-w-0 items-center gap-2">
-          <span
-            v-if="userCompetence.user"
-            class="inline-flex shrink-0 items-center rounded-full border border-neutral-200 bg-white px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-neutral-700"
-          >
-            {{ userCompetence.user.firstName }} {{ userCompetence.user.lastName }}
+          <span class="w-44 shrink-0 break-words text-sm font-medium text-neutral-800">
+            {{ studentName }}
           </span>
-          <div class="min-w-0 flex-1 overflow-hidden text-sm text-neutral-700">
-            <span class="text-neutral-500">Kompetenz:</span>
-            <span class="ml-1 truncate font-medium text-neutral-800">{{ userCompetence.competence.name }}</span>
-            {{ userCompetence.deletedAt === null ? "" : "- deleted" }}
+          <div class="flex min-w-0 flex-1 items-center gap-1 text-sm text-neutral-700">
+            <span class="shrink-0 text-neutral-500">Kompetenz:</span>
+            <span class="min-w-0 truncate font-medium text-neutral-800">{{ userCompetence.competence.name }}</span>
+            <span v-if="userCompetence.deletedAt !== null" class="shrink-0">- deleted</span>
           </div>
         </div>
       </div>
