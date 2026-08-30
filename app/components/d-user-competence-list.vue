@@ -2,23 +2,31 @@
 import type { DCompetence } from "~/types/models"
 
 interface Props {
-  entryId: string
-  userCompetences: any[]
+  entryId?: string
+  userCompetences?: any[]
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits(["remove", "updateLevel"])
 
-async function remove(competence: DCompetence) {
-  emit("remove", competence)
+async function remove(competence: DCompetence, userId?: string) {
+  emit("remove", competence, userId)
 }
 
 const reduced = computed(() => {
-  return Array.from(new Map(props.userCompetences.map((uc) => [uc.competence.id, uc])).values())
+  const items = props.userCompetences ?? []
+  const seen = new Set<string>()
+
+  return items.filter((uc) => {
+    const key = `${uc.userId ?? "unknown"}-${uc.competenceId}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
 })
 
-async function levelChange(competenceId: string, level: number) {
-  emit("updateLevel", competenceId, level)
+async function levelChange(competenceId: string, level: number, userId?: string) {
+  emit("updateLevel", competenceId, level, userId)
 }
 </script>
 
@@ -29,8 +37,8 @@ async function levelChange(competenceId: string, level: number) {
       <div v-for="userCompetence in reduced" :key="userCompetence.id">
         <DUserCompetence
           :userCompetence="userCompetence"
-          @remove="remove(userCompetence.competence)"
-          @levelChange="(level) => levelChange(userCompetence.competenceId, level)"
+          @remove="remove(userCompetence.competence, userCompetence.userId)"
+          @levelChange="(level, userId) => levelChange(userCompetence.competenceId, level, userId ?? userCompetence.userId)"
         />
       </div>
     </div>

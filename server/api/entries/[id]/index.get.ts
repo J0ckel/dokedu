@@ -51,7 +51,15 @@ export default defineEventHandler(async (event) => {
       },
       userCompetences: {
         with: {
-          competence: true
+          competence: true,
+          user: {
+            columns: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              role: true
+            }
+          }
         },
         where: isNull(userCompetences.deletedAt),
         orderBy: userCompetences.createdAt

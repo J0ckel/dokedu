@@ -220,9 +220,12 @@ async function exportEntries() {
     </DHeader>
 
     <div class="block min-h-0 px-4 pt-2.5">
-      <div class="grid items-center justify-between gap-4 border-b border-neutral-200 px-2 pb-2" :style="{ gridTemplateColumns: '4fr 1fr 120px 110px 110px' }">
+      <div class="grid items-center justify-between gap-4 border-b border-neutral-200 px-2 pb-2" :style="{ gridTemplateColumns: '4fr 1.2fr 1fr 120px 110px 110px' }">
         <div class="flex items-center justify-between border-r border-neutral-200 pr-2 text-sm font-medium text-neutral-900">
           <div>Beschreibung</div>
+        </div>
+        <div class="flex items-center justify-between border-r border-neutral-200 pr-2 text-sm font-medium text-neutral-900">
+          <div>Fach</div>
         </div>
         <div class="flex items-center justify-between border-r border-neutral-200 pr-2 text-sm font-medium text-neutral-900">
           <div>Tags</div>
@@ -250,10 +253,19 @@ async function exportEntries() {
         :data-entry-id="entry.id"
         @click="saveEntryPosition(entry.id)"
         class="grid items-center justify-between gap-4 rounded px-2 py-2 hover:bg-neutral-100"
-        :style="{ gridTemplateColumns: '4fr 1fr 120px 110px 110px' }"
+        :style="{ gridTemplateColumns: '4fr 1.2fr 1fr 120px 110px 110px' }"
       >
         <div class="line-clamp-2 items-center gap-2.5 text-sm" :class="entry.body.length === 0 ? 'text-neutral-400' : 'text-neutral-700'">
           {{ entry.body.length > 0 ? entry.body : "Keine Beschreibung vorhanden..." }}
+        </div>
+
+        <div class="flex min-w-0 flex-wrap items-center gap-1 overflow-hidden text-sm text-neutral-500">
+          <template v-if="entry.subjects?.length">
+            <span v-for="subject in entry.subjects" :key="subject.name" class="inline-flex max-w-full truncate rounded-full border border-neutral-200 bg-neutral-50 px-2 py-0.5 text-xs font-medium text-neutral-700">
+              {{ subject.name }}
+            </span>
+          </template>
+          <span v-else class="text-neutral-400">-</span>
         </div>
 
         <div class="relative flex max-w-sm gap-1 overflow-hidden">

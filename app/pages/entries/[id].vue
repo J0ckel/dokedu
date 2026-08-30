@@ -48,6 +48,21 @@ const selectedCompetences = computed(() => {
   return Array.from(new Set(ucs))
 })
 
+const studentCompetenceSelections = computed(() => {
+  const result: Record<string, string[]> = {}
+
+  for (const userCompetence of entry.value?.userCompetences ?? []) {
+    if (!userCompetence.userId || userCompetence.deletedAt) continue
+    const competenceId = userCompetence.competenceId
+    result[competenceId] ??= []
+    if (!result[competenceId].includes(userCompetence.userId)) {
+      result[competenceId].push(userCompetence.userId)
+    }
+  }
+
+  return result
+})
+
 const selectedTags = computed(() => {
   const values = entry.value?.entryTags?.map((c) => c.tag.id)
   return Array.from(new Set(values))
@@ -74,8 +89,24 @@ function toggleCompetenceModal() {
 
 /// USER COMPETENCES ///
 
-async function toggleUserCompetence(competence: DCompetence) {
-  // await saveEntry()
+function isCompetenceSelectedForStudent(competenceId: string, studentId: string) {
+  return !!entry.value?.userCompetences?.some((uc) => uc.competenceId === competenceId && uc.userId === studentId && !uc.deletedAt)
+}
+
+async function toggleUserCompetence(competence: DCompetence, studentId?: string) {
+  if (studentId) {
+    const hasCompetence = isCompetenceSelectedForStudent(competence.id, studentId)
+
+    await $fetch(`/api/entries/${entryId}/competences/${competence.id}`, {
+      method: hasCompetence ? "DELETE" : "POST",
+      body: {
+        userId: studentId
+      }
+    })
+
+    await refresh()
+    return
+  }
 
   if (selectedCompetences.value.includes(competence.id)) {
     await $fetch(`/api/entries/${entryId}/competences/${competence.id}`, {
@@ -158,11 +189,12 @@ async function toggleEvent(event: DEvent) {
   await refresh()
 }
 
-async function updateUserCompetenceLevel(competenceId: string, level: number) {
+async function updateUserCompetenceLevel(competenceId: string, level: number, userId?: string) {
   await $fetch(`/api/entries/${entryId}/competences/${competenceId}`, {
     method: "POST",
     body: {
-      level: level
+      level,
+      userId
     }
   })
 
@@ -288,7 +320,12 @@ async function saveEntry() {
 
             <DModal titel="Kompetenzen" v-if="showCompetenceSearch" @close="showCompetenceSearch = false" @confirm="showCompetenceSearch = false">
               <template v-if="entry && entry.entryUsers && entry?.entryUsers?.length > 0">
-                <DCompetenceSearch :selected="selectedCompetences" :students="entryStudents" @toggle="toggleUserCompetence" />
+                <DCompetenceSearch
+                  :selected="selectedCompetences"
+                  :students="entryStudents"
+                  :student-competence-selections="studentCompetenceSelections"
+                  @toggle="toggleUserCompetence"
+                />
               </template>
               <template v-else>
                 <div class="p-4">

@@ -8,14 +8,24 @@ import { z } from "zod"
 const querySchema = z.object({
   everything: z.coerce.boolean().optional().default(false),
   search: z.string().optional(),
+  grade: z.coerce.number().int().min(1).max(13).optional(),
   competenceId: z.string().optional()
 })
+
+function appliesToGrade(grades: unknown, grade: number) {
+  if (!Array.isArray(grades)) return false
+
+  const numericGrades = grades.filter((value): value is number => typeof value === "number")
+  if (!numericGrades.length) return false
+
+  return grade >= Math.min(...numericGrades) && grade <= Math.max(...numericGrades)
+}
 
 export default defineEventHandler(async (event) => {
   const { user, secure } = await requireUserSession(event)
   if (!secure) throw createError({ statusCode: 401, message: "Unauthorized" })
 
-  const { search, competenceId, everything } = await getValidatedQuery(event, querySchema.parse)
+  const { search, grade, competenceId, everything } = await getValidatedQuery(event, querySchema.parse)
 
   // if (everything) {
   //   return useDrizzle()
@@ -40,7 +50,7 @@ export default defineEventHandler(async (event) => {
   let groupNames = new Map<string, string>()
   let groupIds = new Map<string, string>()
 
-  if (search) {
+  if (search || grade !== undefined) {
     const allCompetences = await useDrizzle()
       .select()
       .from(competences)
@@ -136,7 +146,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  if (search) {
+  if (search || grade !== undefined) {
     let miniSearch = new MiniSearch({
       fields: ["name"], // fields to index for full-text search
       storeFields: ["id", "name"], // fields to return with search results
@@ -147,9 +157,11 @@ export default defineEventHandler(async (event) => {
     miniSearch.addAll(result)
 
     // Search with default options
-    let results = miniSearch.search(search)
+    let results = search ? miniSearch.search(search) : []
 
-    const items = result.filter((c) => results.find((el) => el.id === c.id))
+    const items = grade === undefined
+      ? result.filter((c) => results.find((el) => el.id === c.id))
+      : result.filter((competence) => appliesToGrade(competence.grades, grade) && (!search || results.some((result) => result.id === competence.id)))
 
     // .orderBy(desc(competences.competenceType), asc(competences.name))
     return items.slice(0, 100).map((competence) => ({

@@ -15,7 +15,11 @@ const emit = defineEmits(["remove", "levelChange"])
 
 function upgradeLevel() {
   const level = userCompetence.level >= 3 ? 0 : userCompetence.level + 1
-  emit("levelChange", level)
+  emit("levelChange", level, userCompetence.userId)
+}
+
+function removeCurrent() {
+  emit("remove", userCompetence.competence, userCompetence.userId)
 }
 
 // bg-red-100 bg-orange-100 bg-amber-100 bg-yellow-100 bg-lime-100 bg-green-100 bg-emerald-100 bg-teal-100 bg-cyan-100 bg-sky-100 bg-blue-100 bg-indigo-100 bg-violet-100 bg-purple-100 bg-fuchsia-100 bg-pink-100 bg-rose-100
@@ -23,19 +27,28 @@ function upgradeLevel() {
 </script>
 
 <template>
-  <div v-if="userCompetence" class="flex flex-col gap-1 py-1">
-    <div class="flex items-center justify-between gap-2 rounded-md pr-1">
-      <div class="flex items-center gap-2 pl-0.5">
-        <div class="text-sm text-neutral-700">
-          {{ userCompetence.competence.name }}
-          {{ userCompetence.deletedAt === null ? "" : "- deleted" }}
+  <div v-if="userCompetence" class="flex flex-col gap-1 rounded-md border border-neutral-200 bg-neutral-50 px-2 py-2">
+    <div class="flex min-w-0 items-center gap-2">
+      <div class="min-w-0 flex-1 overflow-hidden">
+        <div class="flex min-w-0 items-center gap-2">
+          <span
+            v-if="userCompetence.user"
+            class="inline-flex shrink-0 items-center rounded-full border border-neutral-200 bg-white px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-neutral-700"
+          >
+            {{ userCompetence.user.firstName }} {{ userCompetence.user.lastName }}
+          </span>
+          <div class="min-w-0 flex-1 overflow-hidden text-sm text-neutral-700">
+            <span class="text-neutral-500">Kompetenz:</span>
+            <span class="ml-1 truncate font-medium text-neutral-800">{{ userCompetence.competence.name }}</span>
+            {{ userCompetence.deletedAt === null ? "" : "- deleted" }}
+          </div>
         </div>
       </div>
-      <div class="flex items-center gap-1">
-        <button type="button" class="flex size-6 items-center justify-center rounded-md bg-blue-600 text-sm text-white hover:bg-blue-700" @click="upgradeLevel">
+      <div class="flex shrink-0 items-center gap-1">
+        <button type="button" class="flex size-7 items-center justify-center rounded-md bg-blue-600 text-sm font-medium text-white shadow-sm hover:bg-blue-700" @click="upgradeLevel">
           {{ userCompetence.level }}
         </button>
-        <DButton :icon-left="XIcon" variant="secondary" class="!px-1" @click="emit('remove', competence)" />
+        <DButton :icon-left="XIcon" variant="secondary" class="!px-1" @click="removeCurrent" />
       </div>
     </div>
     <div class="flex flex-wrap items-center gap-2">

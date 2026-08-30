@@ -8,6 +8,7 @@ const { data: competences } = await useFetch(`/api/competences`)
 
 const reportContent = report.value?.content as any
 const selectedCompetences = ref<string[]>(reportContent?.competences ?? [])
+const subjectOrder = ref<Record<string, number>>(reportContent?.subjectOrder ?? {})
 const showCoverPage = ref<boolean>(reportContent?.showCoverPage ?? true)
 const coverHeaderSize = ref<"normal" | "compact">(reportContent?.coverHeaderSize ?? "normal")
 const reportFontSize = ref<"small" | "normal" | "large">(reportContent?.reportFontSize ?? "normal")
@@ -91,6 +92,7 @@ async function save() {
       schoolYear: schoolYear.value,
       introduction: header.value,
       competences: selectedCompetences.value,
+      subjectOrder: subjectOrder.value,
       showCoverPage: showCoverPage.value,
       coverHeaderSize: coverHeaderSize.value,
       reportFontSize: reportFontSize.value,
@@ -213,6 +215,17 @@ async function downloadReport() {
                 >
                   <DButton variant="secondary" :icon-left="isCompetenceSelected(competence.id) ? SquareCheckBigIcon : SquareIcon"></DButton>
                   <DTag :color="competence.color" class="h-7">{{ competence.name }}</DTag>
+                  <input
+                    v-if="isCompetenceSelected(competence.id)"
+                    v-model.number="subjectOrder[competence.id]"
+                    type="number"
+                    min="0"
+                    max="9999"
+                    placeholder="Reihenfolge"
+                    aria-label="Reihenfolge"
+                    class="ml-auto w-28 rounded-md border border-neutral-200 bg-white px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-blue-600"
+                    @click.stop
+                  />
                 </div>
               </div>
             </div>

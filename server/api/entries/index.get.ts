@@ -1,6 +1,6 @@
 import { asc, desc, ilike, inArray, isNull, eq, and } from "drizzle-orm"
 import { z } from "zod"
-import { entries, entryTags, entryUsers, tags, users } from "~~/server/database/schema"
+import { competences, entries, entryTags, entryUsers, tags, userCompetences, users } from "~~/server/database/schema"
 
 const querySchema = z.object({
   search: z.string().optional(),
@@ -99,11 +99,56 @@ export default defineEventHandler(async (event) => {
     .innerJoin(users, eq(entryUsers.userId, users.id))
     .where(and(isNull(entryUsers.deletedAt), inArray(entryUsers.entryId, entryIds), eq(entryUsers.organisationId, secure.organisationId)))
 
+  const result4 = await db
+    .select({
+      entryId: userCompetences.entryId,
+      competenceId: userCompetences.competenceId
+    })
+    .from(userCompetences)
+    .where(and(isNull(userCompetences.deletedAt), inArray(userCompetences.entryId, entryIds), eq(userCompetences.organisationId, secure.organisationId)))
+
+  const subjectNamesByCompetenceId = new Map<string, string>()
+
+  if (result4.length > 0) {
+    const relevantCompetences = await db
+      .select()
+      .from(competences)
+      .where(and(isNull(competences.deletedAt), eq(competences.organisationId, secure.organisationId)))
+
+    const competenceById = new Map(relevantCompetences.map((competence) => [competence.id, competence]))
+
+    for (const { competenceId } of result4) {
+      const competence = competenceById.get(competenceId)
+      if (!competence || subjectNamesByCompetenceId.has(competenceId)) continue
+
+      let current: typeof competence | undefined = competence
+      const visited = new Set<string>()
+
+      while (current && !visited.has(current.id)) {
+        if (current.competenceType === "subject") {
+          subjectNamesByCompetenceId.set(competenceId, current.name)
+          break
+        }
+
+        visited.add(current.id)
+        current = current.competenceId ? competenceById.get(current.competenceId) : undefined
+      }
+    }
+  }
+
   // Construct final response
   const output = result1.slice(0, limit).map((entry) => ({
     ...entry,
     tags: result2.filter((tag) => tag.entryId === entry.id).map(({ tagId, tagName, tagColor }) => ({ id: tagId, name: tagName, color: tagColor })),
-    users: result3.filter((entryUser) => entryUser.entryId === entry.id).map(({ userId, firstName, lastName }) => ({ id: userId, firstName, lastName }))
+    users: result3.filter((entryUser) => entryUser.entryId === entry.id).map(({ userId, firstName, lastName }) => ({ id: userId, firstName, lastName })),
+    subjects: Array.from(
+      new Set(
+        result4
+          .filter((row) => row.entryId === entry.id)
+          .map((row) => subjectNamesByCompetenceId.get(row.competenceId))
+          .filter((value): value is string => !!value)
+      )
+    ).map((name) => ({ name }))
   }))
 
   return {

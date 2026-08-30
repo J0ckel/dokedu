@@ -2,11 +2,14 @@
 const { user } = useUserSession()
 const canManage = computed(() => user.value?.role === "admin" || user.value?.role === "owner")
 const search = ref("")
+const grade = ref<number | null>(null)
+const queryParams = computed(() => ({
+  search: search.value,
+  ...(grade.value === null ? {} : { grade: grade.value })
+}))
 
 const { data: competences, refresh } = await useFetch("/api/competences", {
-  params: {
-    search: search
-  }
+  params: queryParams
 })
 
 // Filter modal
@@ -18,6 +21,7 @@ const showFilterModal = ref(false)
     <DHeader>
       <DHeaderTitle>Kompetenzen</DHeaderTitle>
       <DInputSearch v-model="search" />
+      <input v-model.number="grade" type="number" min="1" max="13" placeholder="Klassenstufe" class="w-32 rounded-md border-none bg-neutral-100 px-2 py-1.5 text-sm ring-blue-600 ring-offset-2 outline-none focus:ring-2" />
       <template #right>
         <DCompetenceEditor v-if="canManage" @saved="refresh" />
       </template>

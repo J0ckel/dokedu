@@ -7,6 +7,7 @@ const emit = defineEmits(["toggle"])
 interface Props {
   selected: string[]
   students: { id: string; name: string }[]
+  studentCompetenceSelections?: Record<string, string[]>
 }
 
 const props = defineProps<Props>()
@@ -20,7 +21,7 @@ watch(
   (selected) => {
     for (const [competenceId, pendingValue] of Object.entries(pendingSelection.value)) {
       if (selected.includes(competenceId) === pendingValue) {
-        delete pendingSelection.value[competenceId]
+        Reflect.deleteProperty(pendingSelection.value, competenceId)
       }
     }
   }
@@ -30,13 +31,16 @@ function isSelected(competenceId: string) {
   return pendingSelection.value[competenceId] ?? props.selected.includes(competenceId)
 }
 
-onMounted(async () => {
+async function loadStudentLevels() {
   const levels = await Promise.all(props.students.map(async (student) => {
     const competences = await $fetch<any[]>(`/api/users/${student.id}/competences`, { params: { all: true } })
     return [student.id, Object.fromEntries(competences.map((competence) => [competence.id, competence.userLevel]))] as const
   }))
   studentLevels.value = Object.fromEntries(levels)
-})
+}
+
+onMounted(loadStudentLevels)
+watch(() => props.students, loadStudentLevels, { deep: true })
 
 const navigationItems = ref<DCompetence[]>([])
 
@@ -47,12 +51,16 @@ const competenceId = computed(() => {
 })
 
 const search = ref("")
+const debouncedSearch = useDebounce(search, 100)
+const grade = ref<number | null>(null)
+const queryParams = computed(() => ({
+  competenceId: competenceId.value,
+  search: debouncedSearch.value,
+  ...(grade.value === null ? {} : { grade: grade.value })
+}))
 
 const { data: competences } = useFetch("/api/competences", {
-  params: {
-    competenceId: competenceId,
-    search: useDebounce(search, 100)
-  }
+  params: queryParams
 })
 
 const filtered = computed(() => competences.value)
@@ -83,6 +91,14 @@ async function onClick(competence: DCompetence) {
   }
   search.value = ""
   navigationItems.value.push(competence)
+}
+
+function isStudentSelected(competenceId: string, studentId: string) {
+  return !!props.studentCompetenceSelections?.[competenceId]?.includes(studentId)
+}
+
+function onStudentToggle(competence: DCompetence, studentId: string) {
+  emit("toggle", competence, studentId)
 }
 
 async function navigateTo(competenceId: string | null) {
@@ -123,15 +139,16 @@ function historyDate(value: string) {
 
 <template>
   <div class="flex h-[500px] w-full flex-col">
-    <div class="w-full border-b border-neutral-200">
+    <div class="flex w-full border-b border-neutral-200">
       <input
         type="text"
         name="search"
         id="search"
-        class="w-full border-none px-4 py-2 pb-1.5 text-sm outline-none focus:border-neutral-300 focus:ring-0 focus:outline-0"
+        class="min-w-0 flex-1 border-none px-4 py-2 pb-1.5 text-sm outline-none focus:border-neutral-300 focus:ring-0 focus:outline-0"
         placeholder="Suche..."
         v-model="search"
       />
+      <input v-model.number="grade" type="number" min="1" max="13" placeholder="Klassenstufe" class="w-36 border-0 border-l border-neutral-200 px-3 py-2 pb-1.5 text-sm outline-none focus:border-neutral-300 focus:ring-0 focus:outline-0" />
     </div>
     <div v-if="competences" class="flex cursor-default flex-wrap items-center gap-0.5 border-b border-neutral-200 px-3 py-2 text-sm text-neutral-500">
       <div class="rounded-md p-0.5 leading-none hover:bg-neutral-100" @click="navigateTo(null)">Fächer</div>
@@ -167,9 +184,19 @@ function historyDate(value: string) {
           </div>
           <div class="flex shrink-0 flex-col items-end gap-0.5 text-xs text-neutral-500">
             <span class="whitespace-nowrap">Kl. {{ levels(competence) }}</span>
-            <span v-for="student in props.students" :key="student.id" class="whitespace-nowrap">
-              {{ student.name }}: {{ userLevel(student.id, competence.id) }}
-            </span>
+            <div class="flex flex-wrap justify-end gap-1">
+              <button
+                v-for="student in props.students"
+                :key="student.id"
+                type="button"
+                class="rounded-full border px-1.5 py-0.5 transition-colors"
+                :class="isStudentSelected(competence.id, student.id) ? 'border-blue-300 bg-blue-100 text-blue-800' : 'border-neutral-300 bg-white text-neutral-600'"
+                @click.stop="onStudentToggle(competence, student.id)"
+                :title="`${student.name}: ${userLevel(student.id, competence.id)}`"
+              >
+                {{ student.name }}
+              </button>
+            </div>
           </div>
         </div>
         <div v-if="expandedHistoryId === competence.id" class="border-b border-neutral-200 bg-neutral-50 px-4 py-2 text-xs text-neutral-600">

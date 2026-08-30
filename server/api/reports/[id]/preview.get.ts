@@ -49,6 +49,7 @@ export default defineEventHandler(async (event) => {
   let entriesData: any[] = []
   const reportContent = report.content as any
   const selectedCompetenceIds = reportContent?.competences || []
+  const subjectOrder = reportContent?.subjectOrder ?? {}
   const selectedCompetenceTreeIds = new Set<string>()
 
   if (selectedCompetenceIds.length > 0) {
@@ -205,6 +206,7 @@ export default defineEventHandler(async (event) => {
         return {
           id: subject.id,
           name: subject.name,
+          sortOrder: subject.sortOrder,
           color: getHexColor(subject.color || "blue", "100"),
           color200: getHexColor(subject.color || "blue", "200"),
           color900: getHexColor(subject.color || "blue", "900"),
@@ -212,7 +214,7 @@ export default defineEventHandler(async (event) => {
         }
       })
       .filter((subject) => subject.competences.length > 0) // Only include subjects with competences
-      .sort((a, b) => a.name.localeCompare(b.name))
+      .sort((a, b) => (subjectOrder[a.id] ?? a.sortOrder ?? 0) - (subjectOrder[b.id] ?? b.sortOrder ?? 0) || a.name.localeCompare(b.name))
 
     competencesData = subjects
   }
