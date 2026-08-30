@@ -101,6 +101,7 @@ export default defineEventHandler(async (event) => {
       )
       .orderBy(desc(competences.competenceType), asc(competences.name))
       .limit(2500)
+  }
 
   if (search) {
     let miniSearch = new MiniSearch({
