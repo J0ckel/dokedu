@@ -88,10 +88,11 @@ export default defineEventHandler(async (event) => {
 
     const studentGrade = Number(report.student.studentGrade)
 
-    // Keep selected subjects and only include nodes whose grades cover the student's grade.
+    // Subjects and groups are just containers; only leaf competences are filtered by grade,
+    // so a narrower grade range on a parent group can't hide children that do cover the student's grade.
     const relevantCompetences = allCompetences.filter((c) => {
       if (!neededCompetenceIds.has(c.id)) return false
-      if (c.competenceType === "subject") return true
+      if (c.competenceType !== "competence") return true
       const grades = Array.isArray(c.grades) ? c.grades : []
       return !studentGrade || grades.includes(studentGrade)
     })

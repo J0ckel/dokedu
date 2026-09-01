@@ -23,18 +23,17 @@ onKeyDown("Escape", () => navigateTo("/settings/users"))
 
 async function onFormSubmit() {
   try {
-    await $fetch("/api/users", {
-      method: "POST",
+    await $fetch(`/api/users/${route.params.id}`, {
+      method: "PUT",
       body: {
         firstName: firstName.value,
         lastName: lastName.value,
-        email: email.value,
         role: role.value
       }
     })
     navigateTo("/settings/users")
   } catch (error) {
-    console.error("Failed to create user:", error)
+    console.error("Failed to update user:", error)
     // Consider showing a toast notification here to inform the user
   }
 }
@@ -70,7 +69,7 @@ function archiveModal() {
       </div>
       <div class="mb-4">
         <d-label for="role">Rolle</d-label>
-        <d-select v-model="role" :options="roleOptions" name="role" required placeholder="Wähle eine Rolle" disabled />
+        <d-select v-model="role" :options="roleOptions" name="role" required placeholder="Wähle eine Rolle" />
       </div>
       <div class="flex items-center justify-between gap-2">
         <d-button variant="danger-light" @click="archiveModal">Archivieren</d-button>

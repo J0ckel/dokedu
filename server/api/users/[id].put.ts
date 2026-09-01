@@ -5,6 +5,7 @@ import { eq, and } from "drizzle-orm"
 const userUpdateSchema = z.object({
   firstName: z.string().min(1, "First name must be at least 1 character long"),
   lastName: z.string().min(1, "Last name must be at least 1 character long"),
+  role: z.enum(["owner", "admin", "teacher"]).optional(),
   studentBirthday: z.coerce.date().nullable().optional(),
   studentGrade: z.coerce.number().min(1).max(13).nullable().optional(),
   studentBirthplace: z.string().nullable().optional()
@@ -28,6 +29,7 @@ export default defineEventHandler(async (event) => {
       .set({
         firstName: body.firstName,
         lastName: body.lastName,
+        ...(body.role ? { role: body.role } : {}),
         studentBirthday: body.studentBirthday,
         studentGrade: body.studentGrade ? `${body.studentGrade}` : null,
         studentBirthplace: body.studentBirthplace,
@@ -38,6 +40,7 @@ export default defineEventHandler(async (event) => {
         id: users.id,
         firstName: users.firstName,
         lastName: users.lastName,
+        role: users.role,
         studentBirthday: users.studentBirthday,
         studentGrade: users.studentGrade,
         studentBirthplace: users.studentBirthplace
