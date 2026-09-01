@@ -10,7 +10,8 @@ const emit = defineEmits<{ saved: []; deleted: [] }>()
 const modal = ref(false)
 const name = ref("")
 const competenceType = ref<"subject" | "group" | "competence">("competence")
-const grades = ref("1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13")
+const gradeOptions = Array.from({ length: 10 }, (_, index) => index + 1)
+const grades = ref<number[]>([...gradeOptions])
 const error = ref("")
 
 const isEditing = computed(() => Boolean(props.competence))
@@ -20,10 +21,22 @@ const typeOptions = [
   { value: "competence", label: "Kompetenz" }
 ]
 
+function isGradeChecked(grade: number) {
+  return grades.value.includes(grade)
+}
+
+function toggleGrade(grade: number, checked: boolean) {
+  if (checked) {
+    if (!grades.value.includes(grade)) grades.value = [...grades.value, grade].sort((a, b) => a - b)
+  } else {
+    grades.value = grades.value.filter((value) => value !== grade)
+  }
+}
+
 function open() {
   name.value = props.competence?.name ?? ""
   competenceType.value = props.competence?.competenceType ?? "competence"
-  grades.value = props.competence?.grades?.join(", ") ?? "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13"
+  grades.value = props.competence?.grades?.length ? [...props.competence.grades] : [...gradeOptions]
   error.value = ""
   modal.value = true
 }
@@ -33,8 +46,7 @@ function close() {
 }
 
 async function save() {
-  const parsedGrades = grades.value.split(",").map((grade) => Number(grade.trim())).filter((grade) => Number.isInteger(grade) && grade >= 1 && grade <= 13)
-  if (!name.value.trim() || parsedGrades.length === 0) {
+  if (!name.value.trim() || grades.value.length === 0) {
     error.value = "Bitte Name und mindestens eine Klassenstufe angeben."
     return
   }
@@ -46,7 +58,7 @@ async function save() {
         name: name.value,
         competenceType: competenceType.value,
         competenceId: props.competence?.competenceId ?? props.parentId ?? null,
-        grades: parsedGrades
+        grades: grades.value
       }
     })
     close()
@@ -82,7 +94,19 @@ async function remove() {
             <option v-for="option in typeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
           </select>
         </label>
-        <DInput v-model="grades" placeholder="Klassenstufen, z. B. 1, 2, 3" />
+        <label class="flex flex-col gap-1.5 text-sm text-neutral-700">
+          Klassenstufen
+          <div class="flex flex-wrap gap-3">
+            <label v-for="grade in gradeOptions" :key="grade" class="flex items-center gap-1">
+              <input
+                type="checkbox"
+                :checked="isGradeChecked(grade)"
+                @change="toggleGrade(grade, ($event.target as HTMLInputElement).checked)"
+              />
+              {{ grade }}
+            </label>
+          </div>
+        </label>
         <p v-if="error" class="text-sm text-red-700">{{ error }}</p>
       </div>
     </DModal>

@@ -1,6 +1,7 @@
 import { and, eq, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { competences } from "~~/server/database/schema"
+import { syncAncestorGrades } from "~~/server/utils/competenceGrades"
 
 const bodySchema = z.object({
   name: z.string().trim().min(1).max(255),
@@ -26,5 +27,11 @@ export default defineEventHandler(async (event) => {
 
   const [result] = await useDrizzle().update(competences).set({ ...body, updatedAt: new Date() })
     .where(and(eq(competences.id, id), eq(competences.organisationId, secure.organisationId))).returning()
+
+  await syncAncestorGrades(secure.organisationId, body.competenceId)
+  if (existing.competenceId && existing.competenceId !== body.competenceId) {
+    await syncAncestorGrades(secure.organisationId, existing.competenceId)
+  }
+
   return result
 })

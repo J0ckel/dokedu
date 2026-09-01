@@ -14,6 +14,21 @@ const { data: competences, refresh } = await useFetch("/api/competences", {
 
 // Filter modal
 const showFilterModal = ref(false)
+
+const syncingGrades = ref(false)
+async function syncGrades() {
+  if (syncingGrades.value) return
+  syncingGrades.value = true
+  try {
+    const result = await $fetch("/api/competences/sync-grades", { method: "POST" })
+    alert(`${result.updatedCount} Gruppe(n)/Fachbereich(e) wurden aktualisiert.`)
+    await refresh()
+  } catch (cause: any) {
+    alert(cause?.data?.message ?? "Synchronisierung fehlgeschlagen.")
+  } finally {
+    syncingGrades.value = false
+  }
+}
 </script>
 
 <template>
@@ -23,6 +38,7 @@ const showFilterModal = ref(false)
       <DInputSearch v-model="search" />
       <input v-model.number="grade" type="number" min="1" max="13" placeholder="Klassenstufe" class="w-32 rounded-md border-none bg-neutral-100 px-2 py-1.5 text-sm ring-blue-600 ring-offset-2 outline-none focus:ring-2" />
       <template #right>
+        <DButton v-if="canManage" variant="secondary" :disabled="syncingGrades" @click="syncGrades">Klassenstufen synchronisieren</DButton>
         <DCompetenceEditor v-if="canManage" @saved="refresh" />
       </template>
     </DHeader>

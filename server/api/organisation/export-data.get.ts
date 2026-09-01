@@ -198,13 +198,15 @@ export default defineEventHandler(async (event) => {
     }
     archive.append(JSON.stringify(metadata, null, 2), { name: "export_metadata.json" })
 
-    // Finalize archive
-    await archive.finalize()
-
-    // Set response headers
+    // Set response headers before streaming so the client/proxy starts receiving bytes immediately
     const fileName = `dokedu-export-${orgId}-${new Date().toISOString().split("T")[0]}.zip`
     setHeader(event, "Content-Type", "application/zip")
     setHeader(event, "Content-Disposition", `attachment; filename="${fileName}"`)
+
+    // Don't await finalize() before streaming: it only resolves once the archive is fully
+    // drained downstream, so awaiting it here would block sending any bytes until the whole
+    // zip is done, which can exceed the reverse proxy's idle timeout on larger exports.
+    archive.finalize().catch((error) => console.error("Error finalizing export archive:", error))
 
     // Return the archive stream
     return sendStream(event, archive)

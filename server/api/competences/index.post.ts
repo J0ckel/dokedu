@@ -1,6 +1,7 @@
 import { and, eq, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { competences } from "~~/server/database/schema"
+import { syncAncestorGrades } from "~~/server/utils/competenceGrades"
 
 const competenceSchema = z.object({
   name: z.string().trim().min(1).max(255),
@@ -29,10 +30,14 @@ export default defineEventHandler(async (event) => {
     if (!parent) throw createError({ statusCode: 400, message: "Invalid parent competence" })
   }
 
-  return useDrizzle().insert(competences).values({
+  const [result] = await useDrizzle().insert(competences).values({
     ...body,
     organisationId: secure.organisationId,
     createdBy: user.id,
     updatedAt: new Date()
   }).returning()
+
+  await syncAncestorGrades(secure.organisationId, body.competenceId)
+
+  return result
 })
