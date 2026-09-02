@@ -4,6 +4,10 @@ image: dokedu/dokedu:latest
 servers:
   - host: localhost
 
+proxy:
+  # Default is 30s; the full data export can take longer for larger organisations.
+  response_timeout: 300
+
 env:
   clear:
     NUXT_S3_ENDPOINT: "http://localhost:9000"

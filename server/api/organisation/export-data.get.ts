@@ -105,6 +105,15 @@ export default defineEventHandler(async (event) => {
       zlib: { level: 9 } // Maximum compression
     })
 
+    // Without this, a stream error (e.g. broken pipe) throws unhandled and crashes the process.
+    archive.on("error", (error) => console.error("Archive stream error:", error))
+    archive.on("warning", (warning) => console.warn("Archive stream warning:", warning))
+
+    // Stop generating the archive if the client disconnects instead of wasting CPU/memory.
+    event.node.req.on("close", () => {
+      if (!event.node.res.writableEnded) archive.destroy()
+    })
+
     // Helper function to convert data to CSV
     const dataToCSV = (data: any[], columns?: string[]) => {
       if (data.length === 0) {
@@ -155,8 +164,14 @@ export default defineEventHandler(async (event) => {
     ]
 
     for (const { name, data } of exportData) {
-      const csv = dataToCSV(data)
-      archive.append(csv, { name })
+      try {
+        const csv = dataToCSV(data)
+        archive.append(csv, { name })
+      } catch (error) {
+        // Don't let one broken table abort the whole export; note it and continue.
+        console.error(`Failed to serialize ${name} for export:`, error)
+        archive.append(`Failed to export this table: ${error instanceof Error ? error.message : "unknown error"}\n`, { name })
+      }
     }
 
     // Add metadata file
