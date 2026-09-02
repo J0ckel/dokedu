@@ -1,7 +1,6 @@
 import { nanoid } from "nanoid"
 import { users } from "../../database/schema"
 import { z } from "zod"
-import { forgotPasswordProcess } from "../forgot-password.post"
 
 const userSchema = z.object({
   id: z.string().nullable().optional().default(nanoid),
@@ -34,10 +33,9 @@ export default defineEventHandler(async (event) => {
         organisationId: secure.organisationId
       })
 
-      // TODO: Send password reset email to user
-      event.waitUntil(forgotPasswordProcess(user.email))
+      const setupLink = await createPasswordSetupLink(event, user.email)
 
-      return {}
+      return { setupLink }
     }
 
     const result = await useDrizzle()

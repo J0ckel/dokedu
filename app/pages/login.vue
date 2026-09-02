@@ -50,9 +50,6 @@ async function login() {
         <div v-if="errorMsg" class="mb-2 rounded-md bg-red-100 px-4 py-2 text-center text-sm text-red-600">
           {{ errorMsg }}
         </div>
-        <p class="text-center text-sm text-neutral-500">
-          Passwort vergessen? <NuxtLink to="/forgot-password" class="hover:underline">Passwort zurücksetzen</NuxtLink>
-        </p>
       </form>
     </div>
   </div>

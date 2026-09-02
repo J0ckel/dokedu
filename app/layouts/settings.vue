@@ -26,12 +26,12 @@ const links = [
     name: "Datenexport",
     to: "/settings/data-export",
     icon: DownloadIcon
+  },
+  {
+    name: "Profil",
+    to: "/settings/profile",
+    icon: UserIcon
   }
-  // {
-  //   name: "Profil",
-  //   to: "/settings/profile",
-  //   icon: UserIcon
-  // }
 ]
 </script>
 

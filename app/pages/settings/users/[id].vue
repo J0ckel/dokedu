@@ -2,6 +2,8 @@
 import { onKeyDown } from "@vueuse/core"
 
 const route = useRoute()
+const { user: currentUser } = useUserSession()
+const canArchive = computed(() => currentUser.value?.role === "owner" || currentUser.value?.role === "admin")
 
 const { data } = await useFetch(`/api/users/${route.params.id}`)
 
@@ -49,6 +51,20 @@ async function archive() {
 function archiveModal() {
   showArchiveModal.value = true
 }
+
+const setupLink = ref("")
+const copied = ref(false)
+
+async function requestSetupLink() {
+  copied.value = false
+  const result = await $fetch<{ setupLink: string }>(`/api/users/${route.params.id}/setup-link`, { method: "POST" })
+  setupLink.value = result.setupLink
+}
+
+async function copyLink() {
+  await navigator.clipboard.writeText(setupLink.value)
+  copied.value = true
+}
 </script>
 
 <template>
@@ -71,8 +87,21 @@ function archiveModal() {
         <d-label for="role">Rolle</d-label>
         <d-select v-model="role" :options="roleOptions" name="role" required placeholder="Wähle eine Rolle" />
       </div>
+
+      <div v-if="canArchive" class="mb-4 border-t border-neutral-200 pt-4">
+        <d-button variant="secondary" type="button" @click="requestSetupLink">Setup-Link anfordern</d-button>
+        <div v-if="setupLink" class="mt-2">
+          <p class="mb-2 text-xs text-neutral-500">
+            Gib diesen Link an den Benutzer weiter, damit ein neues Passwort festgelegt werden kann. Gültig für 24 Stunden.
+          </p>
+          <div class="mb-2 rounded-md border border-neutral-200 bg-neutral-50 p-2 text-xs break-all">{{ setupLink }}</div>
+          <d-button variant="secondary" type="button" @click="copyLink">{{ copied ? "Kopiert!" : "Link kopieren" }}</d-button>
+        </div>
+      </div>
+
       <div class="flex items-center justify-between gap-2">
-        <d-button variant="danger-light" @click="archiveModal">Archivieren</d-button>
+        <d-button v-if="canArchive" variant="danger-light" @click="archiveModal">Archivieren</d-button>
+        <div v-else></div>
         <d-button type="submit">Speichern</d-button>
       </div>
     </form>

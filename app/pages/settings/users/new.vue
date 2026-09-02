@@ -6,6 +6,9 @@ const lastName = ref("")
 const email = ref("")
 const role = ref<any>(null)
 
+const setupLink = ref("")
+const copied = ref(false)
+
 const roleOptions = [
   { value: "admin", display: "Admin" },
   { value: "teacher", display: "Lehrer" }
@@ -13,12 +16,16 @@ const roleOptions = [
 
 const container = useTemplateRef<HTMLElement>("container")
 
-onClickOutside(container, () => navigateTo("/settings/users"))
-onKeyDown("Escape", () => navigateTo("/settings/users"))
+onClickOutside(container, () => {
+  if (!setupLink.value) navigateTo("/settings/users")
+})
+onKeyDown("Escape", () => {
+  if (!setupLink.value) navigateTo("/settings/users")
+})
 
 async function onFormSubmit() {
   try {
-    await $fetch("/api/users", {
+    const result = await $fetch<{ setupLink?: string }>("/api/users", {
       method: "POST",
       body: {
         firstName: firstName.value,
@@ -27,17 +34,26 @@ async function onFormSubmit() {
         role: role.value
       }
     })
-    navigateTo("/settings/users")
+    setupLink.value = result.setupLink ?? ""
   } catch (error) {
     console.error("Failed to create user:", error)
     // Consider showing a toast notification here to inform the user
   }
 }
+
+async function copyLink() {
+  await navigator.clipboard.writeText(setupLink.value)
+  copied.value = true
+}
+
+function done() {
+  navigateTo("/settings/users")
+}
 </script>
 
 <template>
   <div ref="container" class="absolute top-0 right-0 h-screen w-[400px] border-l border-neutral-200 bg-white p-4 shadow-lg">
-    <form @submit.prevent="onFormSubmit">
+    <form v-if="!setupLink" @submit.prevent="onFormSubmit">
       <div class="text-md mb-4 font-medium">Neuen Benutzer erstellen</div>
       <div class="mb-4">
         <d-label for="firstName">Vorname</d-label>
@@ -56,11 +72,24 @@ async function onFormSubmit() {
         <d-select v-model="role" :options="roleOptions" name="role" required placeholder="Wähle eine Rolle" />
       </div>
       <div class="mb-4">
-        <p class="text-xs text-neutral-500">Der Benutzer erhält eine E-Mail mit einem Link, über den er sein Passwort festlegen kann.</p>
+        <p class="text-xs text-neutral-500">Nach dem Erstellen erhältst du einen Link, über den der Benutzer sein Passwort festlegen kann.</p>
       </div>
       <div class="flex items-center justify-end gap-2">
         <d-button type="submit">Erstellen</d-button>
       </div>
     </form>
+
+    <div v-else>
+      <div class="text-md mb-4 font-medium">Benutzer erstellt</div>
+      <p class="mb-2 text-xs text-neutral-500">
+        Gib diesen Link an {{ firstName }} weiter, damit ein Passwort festgelegt werden kann. Der Link ist 24 Stunden gültig.
+      </p>
+      <div class="mb-4 rounded-md border border-neutral-200 bg-neutral-50 p-2 text-xs break-all">{{ setupLink }}</div>
+      <div class="flex items-center justify-end gap-2">
+        <d-button variant="secondary" @click="copyLink">{{ copied ? "Kopiert!" : "Link kopieren" }}</d-button>
+        <d-button @click="done">Fertig</d-button>
+      </div>
+    </div>
   </div>
 </template>
+
