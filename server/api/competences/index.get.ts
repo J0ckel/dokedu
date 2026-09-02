@@ -150,7 +150,8 @@ export default defineEventHandler(async (event) => {
     let miniSearch = new MiniSearch({
       fields: ["name"], // fields to index for full-text search
       storeFields: ["id", "name"], // fields to return with search results
-      searchOptions: { fuzzy: 0.49, prefix: true }
+      // keep fuzziness tight so unrelated words don't match (e.g. "addieren" matching "Aggregatszustände")
+      searchOptions: { fuzzy: 0.2, prefix: true }
     })
 
     // Index all documents
@@ -159,9 +160,16 @@ export default defineEventHandler(async (event) => {
     // Search with default options
     let results = search ? miniSearch.search(search) : []
 
+    // when searching by text, only show actual competences, not subject/group folders,
+    // so results can be scanned flat without navigating into folders
     const items = grade === undefined
-      ? result.filter((c) => results.find((el) => el.id === c.id))
-      : result.filter((competence) => appliesToGrade(competence.grades, grade) && (!search || results.some((result) => result.id === competence.id)))
+      ? result.filter((c) => (!search || c.competenceType === "competence") && results.find((el) => el.id === c.id))
+      : result.filter(
+          (competence) =>
+            (!search || competence.competenceType === "competence") &&
+            appliesToGrade(competence.grades, grade) &&
+            (!search || results.some((result) => result.id === competence.id))
+        )
 
     // .orderBy(desc(competences.competenceType), asc(competences.name))
     return items.slice(0, 100).map((competence) => ({

@@ -8,6 +8,7 @@ interface Props {
   selected: string[]
   students: { id: string; name: string }[]
   studentCompetenceSelections?: Record<string, string[]>
+  suggested?: DCompetence[]
 }
 
 const props = defineProps<Props>()
@@ -149,6 +150,20 @@ function historyDate(value: string) {
         v-model="search"
       />
       <input v-model.number="grade" type="number" min="1" max="13" placeholder="Klassenstufe" class="w-36 border-0 border-l border-neutral-200 px-3 py-2 pb-1.5 text-sm outline-none focus:border-neutral-300 focus:ring-0 focus:outline-0" />
+    </div>
+    <div v-if="suggested && suggested.length > 0 && !search" class="border-b border-neutral-200">
+      <div class="px-4 pt-2 pb-1 text-xs font-medium text-neutral-500">Kompetenzen aus der Veranstaltung</div>
+      <div
+        v-for="competence in suggested"
+        :key="'suggested-' + competence.id"
+        class="flex cursor-default items-center gap-1.5 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
+        :class="isSelected(competence.id) ? 'bg-blue-50 text-blue-900 hover:bg-blue-100' : ''"
+        @click="onClick(competence)"
+      >
+        <CircleCheckIcon v-if="isSelected(competence.id)" class="size-4 text-blue-600" />
+        <CircleIcon v-else class="size-4 text-neutral-400" />
+        <div class="flex-1">{{ competence.name }}</div>
+      </div>
     </div>
     <div v-if="competences" class="flex cursor-default flex-wrap items-center gap-0.5 border-b border-neutral-200 px-3 py-2 text-sm text-neutral-500">
       <div class="rounded-md p-0.5 leading-none hover:bg-neutral-100" @click="navigateTo(null)">Fächer</div>

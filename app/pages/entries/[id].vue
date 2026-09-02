@@ -73,6 +73,29 @@ const selectedEvents = computed(() => {
   return Array.from(new Set(values))
 })
 
+// competences already attached to the selected events, suggested as quick picks
+const eventCompetences = ref<DCompetence[]>([])
+
+async function loadEventCompetences() {
+  const eventIds = selectedEvents.value
+  if (!eventIds.length) {
+    eventCompetences.value = []
+    return
+  }
+
+  const results = await Promise.all(
+    eventIds.map((eventId) => $fetch<any[]>(`/api/events/${eventId}/competences`))
+  )
+
+  const byId = new Map<string, DCompetence>()
+  for (const competence of results.flat()) {
+    byId.set(competence.competenceId, { ...competence, id: competence.competenceId })
+  }
+  eventCompetences.value = Array.from(byId.values())
+}
+
+watch(selectedEvents, loadEventCompetences, { immediate: true })
+
 // MODALS
 
 const showUserModal = ref(false)
@@ -325,6 +348,7 @@ async function saveEntry() {
                   :selected="selectedCompetences"
                   :students="entryStudents"
                   :student-competence-selections="studentCompetenceSelections"
+                  :suggested="eventCompetences"
                   @toggle="toggleUserCompetence"
                 />
               </template>
