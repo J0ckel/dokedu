@@ -19,7 +19,10 @@ export default defineEventHandler(async (event) => {
   if (!secure) throw createError({ statusCode: 401, message: "Unauthorized" })
 
   const { id, competenceId } = await getValidatedRouterParams(event, routeParams.parse)
-  const { level, userId } = await readValidatedBody(event, bodySchema.parse)
+  const body = await readValidatedBody(event, bodySchema.parse)
+  const userId = body.userId
+  // fall back to 1 in case a request body without a level slips through validation
+  const level = body.level ?? 1
 
   // check if the competence is part of the organisation
   const competenceExists = await useDrizzle()

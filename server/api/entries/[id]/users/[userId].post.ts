@@ -49,7 +49,7 @@ export default defineEventHandler(async (event) => {
       userId: userId,
       entryId: id,
       competenceId: c.competenceId,
-      level: c.level,
+      level: c.level ?? 1,
       organisationId: secure.organisationId
     }))
 
