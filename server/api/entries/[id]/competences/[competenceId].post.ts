@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm"
+import { and, eq, isNull } from "drizzle-orm"
 import { z } from "zod"
 import { competences, entryUsers, userCompetences } from "~~/server/database/schema"
 
@@ -62,12 +62,13 @@ export default defineEventHandler(async (event) => {
 
   // get entry users
   const result = await useDrizzle()
-    .select({ userId: entryUsers.userId, deletedAt: entryUsers.deletedAt })
+    .select({ userId: entryUsers.userId })
     .from(entryUsers)
     .where(
       and(
         eq(entryUsers.entryId, id),
-        eq(entryUsers.organisationId, secure.organisationId)
+        eq(entryUsers.organisationId, secure.organisationId),
+        isNull(entryUsers.deletedAt)
       )
     )
 
@@ -79,7 +80,6 @@ export default defineEventHandler(async (event) => {
     entryId: id,
     level: level,
     organisationId: secure.organisationId,
-    deletedAt: c.deletedAt,
     createdBy: user.id
   }))
 
