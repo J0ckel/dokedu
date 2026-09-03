@@ -8,8 +8,24 @@ const { data: event } = await useFetch(`/api/events/${id.value}`)
 const { data: eventCompetences, refresh: refreshEventCompetences } = await useFetch(`/api/events/${id.value}/competences`)
 const { data: students } = await useFetch("/api/users", { params: { role: "student" } })
 const studentLevels = ref<Record<string, Record<string, number | null>>>({})
+const competenceFilter = ref("")
+const studentFilter = ref("")
 const showCompetenceModal = ref(false)
 const selectedCompetences = computed(() => (eventCompetences.value ?? []).map((competence) => competence.competenceId))
+
+const filteredCompetences = computed(() => {
+  const query = competenceFilter.value.trim().toLowerCase()
+  if (!query) return eventCompetences.value ?? []
+
+  return (eventCompetences.value ?? []).filter((competence) => competence.name.toLowerCase().includes(query))
+})
+
+const filteredStudents = computed(() => {
+  const query = studentFilter.value.trim().toLowerCase()
+  if (!query) return students.value ?? []
+
+  return (students.value ?? []).filter((student) => `${student.firstName} ${student.lastName}`.toLowerCase().includes(query))
+})
 
 async function loadStudentLevels() {
   if (!students.value?.length) {
@@ -174,8 +190,20 @@ async function deleteEvent() {
             <div class="font-bold text-neutral-900">Kompetenzen</div>
             <DButton :icon-left="PlusIcon" variant="secondary" @click="showCompetenceModal = true">Hinzufügen</DButton>
           </div>
-          <div v-if="eventCompetences?.length" class="space-y-3">
-            <div v-for="competence in eventCompetences" :key="competence.competenceId" class="rounded-md border border-neutral-200 bg-neutral-50 p-3">
+
+          <div class="mb-3 grid gap-2 md:grid-cols-2">
+            <div class="rounded-md border border-neutral-200 bg-white px-2 py-1.5">
+              <div class="mb-1 text-[11px] font-medium uppercase tracking-wide text-neutral-500">Kompetenz-Filter</div>
+              <input v-model="competenceFilter" type="text" class="w-full border-0 bg-transparent p-0 text-sm text-neutral-700 outline-none placeholder:text-neutral-400" />
+            </div>
+            <div class="rounded-md border border-neutral-200 bg-white px-2 py-1.5">
+              <div class="mb-1 text-[11px] font-medium uppercase tracking-wide text-neutral-500">Schüler-Filter</div>
+              <input v-model="studentFilter" type="text" class="w-full border-0 bg-transparent p-0 text-sm text-neutral-700 outline-none placeholder:text-neutral-400" />
+            </div>
+          </div>
+
+          <div v-if="filteredCompetences.length" class="space-y-3">
+            <div v-for="competence in filteredCompetences" :key="competence.competenceId" class="rounded-md border border-neutral-200 bg-neutral-50 p-3">
               <div class="mb-2 flex items-center justify-between gap-3">
                 <div class="flex min-w-0 items-center gap-2">
                   <DTag :color="competence.color ?? 'gray'">{{ competence.name }}</DTag>
@@ -183,8 +211,8 @@ async function deleteEvent() {
                 </div>
               </div>
 
-              <div v-if="students?.length" class="flex flex-wrap gap-2">
-                <div v-for="student in students" :key="student.id" class="flex items-center gap-2 rounded-md border border-neutral-200 bg-white px-2 py-1.5">
+              <div v-if="filteredStudents.length" class="flex flex-wrap gap-2">
+                <div v-for="student in filteredStudents" :key="student.id" class="flex items-center gap-2 rounded-md border border-neutral-200 bg-white px-2 py-1.5">
                   <span class="min-w-0 text-xs text-neutral-700">{{ student.firstName }} {{ student.lastName }}</span>
                   <div class="flex items-center gap-1">
                     <button
@@ -200,10 +228,10 @@ async function deleteEvent() {
                   </div>
                 </div>
               </div>
-              <div v-else class="text-xs text-neutral-500">Noch keine Schüler verfügbar.</div>
+              <div v-else class="text-xs text-neutral-500">Keine passenden Schüler gefunden.</div>
             </div>
           </div>
-          <div v-else class="text-neutral-500">Noch keine Kompetenzen zugeordnet.</div>
+          <div v-else class="text-neutral-500">Keine passenden Kompetenzen gefunden.</div>
         </div>
       </div>
     </DPageContent>
