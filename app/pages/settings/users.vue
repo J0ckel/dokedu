@@ -44,6 +44,7 @@ const roles = [
   { value: "owner", label: "Besitzer" },
   { value: "admin", label: "Admin" },
   { value: "teacher", label: "Lehrer" },
+  { value: "competence_admin", label: "Kompetenz-Admin" },
   { value: "student", label: "Schüler" },
   { value: "parent", label: "Elternteil" }
 ]

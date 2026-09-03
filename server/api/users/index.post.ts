@@ -7,7 +7,7 @@ const userSchema = z.object({
   firstName: z.string(),
   lastName: z.string(),
   email: z.string().email().nullable().optional(),
-  role: z.enum(["owner", "admin", "teacher", "student"]),
+  role: z.enum(["owner", "admin", "teacher", "student", "competence_admin"]),
   studentBirthday: z.coerce.date().nullable().optional(),
   studentGrade: z.coerce.number().min(1).max(13).nullable().optional(),
   createdAt: z.coerce.date().optional(),
@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
   try {
     const user = await readValidatedBody(event, userSchema.parse)
 
-    if (user.role === "admin" || user.role === "teacher") {
+    if (user.role === "admin" || user.role === "teacher" || user.role === "competence_admin") {
       if (!user.email) throw createError({ statusCode: 400, message: "Invalid request body" })
 
       await useDrizzle().insert(users).values({

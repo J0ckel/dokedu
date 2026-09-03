@@ -3,7 +3,7 @@ import { pgTable, timestamp, text, integer, AnyPgColumn, date, primaryKey, uniqu
 import { nanoid } from "nanoid"
 
 // Types
-export type UserRole = "owner" | "admin" | "teacher" | "educator" | "student" | "parent"
+export type UserRole = "owner" | "admin" | "teacher" | "educator" | "student" | "parent" | "competence_admin"
 export type StudentSex = "male" | "female" | "other"
 export type CompetenceType = "subject" | "group" | "competence"
 export type UserAttendanceState = "unknown" | "present" | "absent" | "late" | "sick"

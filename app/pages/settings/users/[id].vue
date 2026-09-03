@@ -15,7 +15,8 @@ const role = ref(data.value?.role)
 const roleOptions = [
   { value: "owner", display: "Besitzer" },
   { value: "admin", display: "Admin" },
-  { value: "teacher", display: "Lehrer" }
+  { value: "teacher", display: "Lehrer" },
+  { value: "competence_admin", display: "Kompetenz-Admin" }
 ]
 
 const container = useTemplateRef<HTMLElement>("container")

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { user } = useUserSession()
-const canManage = computed(() => user.value?.role === "admin" || user.value?.role === "owner")
+const canManage = computed(() => user.value?.role === "admin" || user.value?.role === "owner" || user.value?.role === "competence_admin")
 const route = useRoute()
 const id = computed(() => route.params.id)
 

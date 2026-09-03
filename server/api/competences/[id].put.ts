@@ -14,7 +14,7 @@ const bodySchema = z.object({
 export default defineEventHandler(async (event) => {
   const { user, secure } = await requireUserSession(event)
   if (!secure) throw createError({ statusCode: 401, message: "Unauthorized" })
-  if (user.role !== "admin" && user.role !== "owner") throw createError({ statusCode: 403, message: "Forbidden" })
+  if (user.role !== "admin" && user.role !== "owner" && user.role !== "competence_admin") throw createError({ statusCode: 403, message: "Forbidden" })
 
   const { id } = await getValidatedRouterParams(event, (value) => z.object({ id: z.string() }).parse(value))
   const body = await readValidatedBody(event, bodySchema.parse)

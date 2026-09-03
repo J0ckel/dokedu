@@ -11,7 +11,8 @@ const copied = ref(false)
 
 const roleOptions = [
   { value: "admin", display: "Admin" },
-  { value: "teacher", display: "Lehrer" }
+  { value: "teacher", display: "Lehrer" },
+  { value: "competence_admin", display: "Kompetenz-Admin" }
 ]
 
 const container = useTemplateRef<HTMLElement>("container")

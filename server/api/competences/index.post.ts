@@ -12,7 +12,7 @@ const competenceSchema = z.object({
 })
 
 function assertCanManage(role: string) {
-  if (role !== "admin" && role !== "owner") {
+  if (role !== "admin" && role !== "owner" && role !== "competence_admin") {
     throw createError({ statusCode: 403, message: "Forbidden" })
   }
 }

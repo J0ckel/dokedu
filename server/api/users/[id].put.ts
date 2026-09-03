@@ -5,7 +5,7 @@ import { eq, and } from "drizzle-orm"
 const userUpdateSchema = z.object({
   firstName: z.string().min(1, "First name must be at least 1 character long"),
   lastName: z.string().min(1, "Last name must be at least 1 character long"),
-  role: z.enum(["owner", "admin", "teacher"]).optional(),
+  role: z.enum(["owner", "admin", "teacher", "competence_admin"]).optional(),
   studentBirthday: z.coerce.date().nullable().optional(),
   studentGrade: z.coerce.number().min(1).max(13).nullable().optional(),
   studentBirthplace: z.string().nullable().optional()
