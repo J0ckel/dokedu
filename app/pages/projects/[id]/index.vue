@@ -6,8 +6,34 @@ const id = useRouteParams<string>("id")
 
 const { data: event } = await useFetch(`/api/events/${id.value}`)
 const { data: eventCompetences, refresh: refreshEventCompetences } = await useFetch(`/api/events/${id.value}/competences`)
+const { data: students } = await useFetch("/api/users", { params: { role: "student" } })
+const studentLevels = ref<Record<string, Record<string, number | null>>>({})
 const showCompetenceModal = ref(false)
 const selectedCompetences = computed(() => (eventCompetences.value ?? []).map((competence) => competence.competenceId))
+
+async function loadStudentLevels() {
+  if (!students.value?.length) {
+    studentLevels.value = {}
+    return
+  }
+
+  const levels = await Promise.all(
+    students.value.map(async (student) => {
+      const competences = await $fetch<any[]>(`/api/users/${student.id}/competences`, { params: { all: true } })
+      return [student.id, Object.fromEntries(competences.map((competence) => [competence.id, competence.userLevel]))] as const
+    })
+  )
+
+  studentLevels.value = Object.fromEntries(levels)
+}
+
+watch(
+  () => students.value,
+  () => {
+    loadStudentLevels()
+  },
+  { immediate: true }
+)
 
 async function toggleCompetence(competence: any) {
   const isSelected = selectedCompetences.value.includes(competence.id)
@@ -17,6 +43,29 @@ async function toggleCompetence(competence: any) {
     await $fetch(`/api/events/${id.value}/competences`, { method: "POST", body: { competenceId: competence.id } })
   }
   await refreshEventCompetences()
+  await loadStudentLevels()
+}
+
+function competenceRange(competence: any) {
+  const grades = competence?.grades ?? []
+  if (!grades.length) return "-"
+  const first = grades[0]
+  const last = grades[grades.length - 1]
+  return first === last ? `${first}` : `${first} - ${last}`
+}
+
+function userLevel(studentId: string, competenceId: string) {
+  const level = studentLevels.value[studentId]?.[competenceId]
+  return level === null || level === undefined ? null : level
+}
+
+async function updateStudentLevel(competenceId: string, studentId: string, level: number) {
+  await $fetch(`/api/users/${studentId}/competences/${competenceId}/level`, {
+    method: "POST",
+    body: { level }
+  })
+
+  await loadStudentLevels()
 }
 
 const name = computed({
@@ -125,10 +174,34 @@ async function deleteEvent() {
             <div class="font-bold text-neutral-900">Kompetenzen</div>
             <DButton :icon-left="PlusIcon" variant="secondary" @click="showCompetenceModal = true">Hinzufügen</DButton>
           </div>
-          <div v-if="eventCompetences?.length" class="flex flex-wrap gap-2">
-            <DTag v-for="competence in eventCompetences" :key="competence.competenceId" :color="competence.color ?? 'gray'">
-              {{ competence.name }}
-            </DTag>
+          <div v-if="eventCompetences?.length" class="space-y-3">
+            <div v-for="competence in eventCompetences" :key="competence.competenceId" class="rounded-md border border-neutral-200 bg-neutral-50 p-3">
+              <div class="mb-2 flex items-center justify-between gap-3">
+                <div class="flex min-w-0 items-center gap-2">
+                  <DTag :color="competence.color ?? 'gray'">{{ competence.name }}</DTag>
+                  <span class="text-xs text-neutral-500">Kl. {{ competenceRange(competence) }}</span>
+                </div>
+              </div>
+
+              <div v-if="students?.length" class="flex flex-wrap gap-2">
+                <div v-for="student in students" :key="student.id" class="flex items-center gap-2 rounded-md border border-neutral-200 bg-white px-2 py-1.5">
+                  <span class="min-w-0 text-xs text-neutral-700">{{ student.firstName }} {{ student.lastName }}</span>
+                  <div class="flex items-center gap-1">
+                    <button
+                      v-for="level in [0, 1, 2, 3]"
+                      :key="`${competence.competenceId}-${student.id}-${level}`"
+                      type="button"
+                      class="h-6 min-w-6 rounded border px-1 text-[10px] font-medium transition-colors"
+                      :class="userLevel(student.id, competence.competenceId) === level ? 'border-blue-600 bg-blue-600 text-white' : 'border-neutral-300 bg-white text-neutral-600 hover:bg-neutral-100'"
+                      @click="updateStudentLevel(competence.competenceId, student.id, level)"
+                    >
+                      {{ level }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="text-xs text-neutral-500">Noch keine Schüler verfügbar.</div>
+            </div>
           </div>
           <div v-else class="text-neutral-500">Noch keine Kompetenzen zugeordnet.</div>
         </div>
