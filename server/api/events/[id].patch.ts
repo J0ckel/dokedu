@@ -4,16 +4,14 @@ import { z } from "zod"
 const eventSchema = z.object({
   id: z.string(),
   title: z.string().optional(),
-  body: z.string().optional(),
-  startsAt: z.coerce.date().optional(),
-  endsAt: z.coerce.date().optional()
+  body: z.string().optional()
 })
 
 export default defineEventHandler(async (event) => {
   const { user, secure } = await requireUserSession(event)
   if (!secure) throw createError({ statusCode: 401, message: "Unauthorized" })
 
-  const { id, body, title, startsAt, endsAt } = await readValidatedBody(event, eventSchema.parse)
+  const { id, body, title } = await readValidatedBody(event, eventSchema.parse)
 
   let result
 
@@ -29,22 +27,6 @@ export default defineEventHandler(async (event) => {
     result = await useDrizzle()
       .update(events)
       .set({ body, updatedAt: new Date() })
-      .where(and(eq(events.id, id), eq(events.organisationId, secure.organisationId)))
-      .returning()
-  }
-
-  if (startsAt) {
-    result = await useDrizzle()
-      .update(events)
-      .set({ startsAt, updatedAt: new Date() })
-      .where(and(eq(events.id, id), eq(events.organisationId, secure.organisationId)))
-      .returning()
-  }
-
-  if (endsAt) {
-    result = await useDrizzle()
-      .update(events)
-      .set({ endsAt, updatedAt: new Date() })
       .where(and(eq(events.id, id), eq(events.organisationId, secure.organisationId)))
       .returning()
   }

@@ -169,8 +169,6 @@ export const events = pgTable("events", {
   id: text().primaryKey().$defaultFn(nanoid),
   title: text().notNull(),
   body: text().notNull(),
-  startsAt: timestamp({ withTimezone: true }).notNull(),
-  endsAt: timestamp({ withTimezone: true }).notNull(),
   recurrence: text(),
   ...organisationId,
   ...timestamps

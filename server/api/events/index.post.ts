@@ -3,9 +3,7 @@ import { z } from "zod"
 
 const eventSchema = z.object({
   title: z.string(),
-  body: z.string(),
-  startsAt: z.coerce.date(),
-  endsAt: z.coerce.date()
+  body: z.string()
 })
 
 export default defineEventHandler(async (event) => {
@@ -19,8 +17,6 @@ export default defineEventHandler(async (event) => {
     .values({
       title: body.title,
       body: body.body,
-      startsAt: body.startsAt,
-      endsAt: body.endsAt,
       organisationId: secure.organisationId
     })
     .returning()

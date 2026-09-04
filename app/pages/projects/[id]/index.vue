@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { formatDate } from "@vueuse/core"
-import { ArrowRightIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-vue-next"
+import { PlusIcon, Trash2Icon, XIcon } from "lucide-vue-next"
 
 const id = useRouteParams<string>("id")
 
@@ -112,34 +111,6 @@ const description = computed({
   }
 })
 
-const startsAt = computed({
-  get: () => (event.value?.startsAt ? formatDate(new Date(Date.parse(event.value?.startsAt)), "YYYY-MM-DD") : ""),
-  set: async (value) => {
-    event.value!.startsAt = value
-    await $fetch(`/api/events/${id.value}`, {
-      method: "PATCH",
-      body: {
-        id: id.value,
-        startsAt: value
-      }
-    })
-  }
-})
-
-const endsAt = computed({
-  get: () => (event.value?.endsAt ? formatDate(new Date(Date.parse(event.value?.endsAt)), "YYYY-MM-DD") : ""),
-  set: async (value) => {
-    event.value!.endsAt = value
-    await $fetch(`/api/events/${id.value}`, {
-      method: "PATCH",
-      body: {
-        id: id.value,
-        endsAt: value
-      }
-    })
-  }
-})
-
 async function deleteEvent() {
   let confirmed = confirm("Möchtest du diesen Eintrag wirklich archivieren?")
   if (!confirmed) return
@@ -178,12 +149,6 @@ async function deleteEvent() {
           class="mb-2.5 field-sizing-content w-full resize-none text-gray-800 outline-0"
           placeholder="Füge eine Beschreibung hinzu"
         />
-
-        <div class="mb-2 flex items-center gap-2">
-          <d-input v-model="startsAt" type="date" placeholder="Startdatum" />
-          <ArrowRightIcon class="h-5 w-5 text-gray-500" />
-          <d-input v-model="endsAt" type="date" placeholder="Enddatum" />
-        </div>
 
         <div class="mt-8 rounded-md border border-neutral-200 p-4 text-sm text-neutral-700">
           <div class="mb-3 flex items-center justify-between">
