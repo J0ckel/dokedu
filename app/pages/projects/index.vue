@@ -86,7 +86,7 @@ function clearSubjectFilters() {
         <div class="line-clamp-1 text-sm text-ellipsis text-neutral-700">{{ project.title }}</div>
         <div class="flex flex-wrap gap-1.5">
           <DTag v-for="competence in project.competences" :key="competence.id" color="gray">
-            {{ competence.subject ? `${competence.subject}: ${competence.name}` : competence.name }}
+            {{ competence.name }}
           </DTag>
           <span v-if="!project.competences.length" class="text-sm text-neutral-500">Keine Kompetenzen zugeordnet</span>
         </div>
