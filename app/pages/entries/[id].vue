@@ -94,7 +94,32 @@ async function loadEventCompetences() {
   eventCompetences.value = Array.from(byId.values())
 }
 
-watch(selectedEvents, loadEventCompetences, { immediate: true })
+async function syncEventCompetences() {
+  if (!eventCompetences.value.length || !selectedUsers.value.length) return
+
+  const missingCompetences = eventCompetences.value.filter((competence) => !selectedCompetences.value.includes(competence.id))
+  if (!missingCompetences.length) return
+
+  await Promise.all(
+    missingCompetences.map((competence) =>
+      $fetch(`/api/entries/${entryId}/competences/${competence.id}`, {
+        method: "POST"
+      })
+    )
+  )
+
+  await refresh()
+}
+
+watch(
+  selectedEvents,
+  async () => {
+    await loadEventCompetences()
+    await syncEventCompetences()
+  },
+  { immediate: true }
+)
+watch(selectedUsers, syncEventCompetences)
 
 // MODALS
 

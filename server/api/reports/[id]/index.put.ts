@@ -15,7 +15,8 @@ const bodySchema = z.object({
   coverHeaderSize: z.enum(["normal", "compact"]).optional(),
   reportFontSize: z.enum(["small", "normal", "large"]).optional(),
   reportLayout: z.enum(["standard", "compact"]).optional(),
-  includeEntries: z.boolean().optional()
+  includeEntries: z.boolean().optional(),
+  allGrades: z.boolean().optional()
 })
 
 export default defineEventHandler(async (event) => {
@@ -23,7 +24,7 @@ export default defineEventHandler(async (event) => {
   if (!secure) throw createError({ statusCode: 401, message: "Unauthorized" })
 
   const { id } = await getValidatedRouterParams(event, paramsSchema.parse)
-  const { status, schoolYear, introduction, competences, subjectOrder, showCoverPage, coverHeaderSize, reportFontSize, reportLayout, includeEntries } = await readValidatedBody(event, bodySchema.parse)
+  const { status, schoolYear, introduction, competences, subjectOrder, showCoverPage, coverHeaderSize, reportFontSize, reportLayout, includeEntries, allGrades } = await readValidatedBody(event, bodySchema.parse)
 
   // Update the existing report with the new values
   await useDrizzle()
@@ -39,7 +40,8 @@ export default defineEventHandler(async (event) => {
         coverHeaderSize,
         reportFontSize,
         reportLayout,
-        includeEntries
+        includeEntries,
+        allGrades
       },
       updatedAt: new Date()
     })

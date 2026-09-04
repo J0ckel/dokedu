@@ -14,6 +14,7 @@ const coverHeaderSize = ref<"normal" | "compact">(reportContent?.coverHeaderSize
 const reportFontSize = ref<"small" | "normal" | "large">(reportContent?.reportFontSize ?? "normal")
 const reportLayout = ref<"standard" | "compact">(reportContent?.reportLayout ?? "standard")
 const includeEntries = ref<boolean>(reportContent?.includeEntries ?? false)
+const allGrades = ref<boolean>(reportContent?.allGrades ?? false)
 
 const coverHeaderSizeOptions = [
   { value: "normal", display: "Normal" },
@@ -97,7 +98,8 @@ async function save() {
       coverHeaderSize: coverHeaderSize.value,
       reportFontSize: reportFontSize.value,
       reportLayout: reportLayout.value,
-      includeEntries: includeEntries.value
+      includeEntries: includeEntries.value,
+      allGrades: allGrades.value
     }
   })
 
@@ -158,6 +160,10 @@ async function downloadReport() {
               <DToggle v-model="includeEntries">Einträge mit Kompetenzen und Niveau ausgeben</DToggle>
             </div>
 
+            <div class="flex w-full flex-col gap-2">
+              <DToggle v-model="allGrades">Kompetenzen aller Klassenstufen berücksichtigen</DToggle>
+            </div>
+
             <div class="grid grid-cols-2 gap-4">
               <div class="">
                 <DLabel class="mb-1">Vorname</DLabel>
@@ -204,7 +210,9 @@ async function downloadReport() {
                 </DButton>
               </div>
               <div class="rounded-md bg-neutral-100 p-2 text-sm text-neutral-500">
-                Für {{ report?.student.firstName }} werden nur Kompetenzen angezeigt, die für die {{ report?.student.studentGrade }}. Klasse vorgesehen sind und mindestens mit Niveau 1 erreicht wurden.
+                Für {{ report?.student.firstName }} werden
+                {{ allGrades ? "Kompetenzen aller Klassenstufen" : `nur Kompetenzen für die ${report?.student.studentGrade}. Klasse` }}
+                angezeigt, die mindestens mit Niveau 1 erreicht wurden.
               </div>
               <div class="flex flex-col gap-0.5">
                 <div

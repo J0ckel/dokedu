@@ -87,6 +87,7 @@ export default defineEventHandler(async (event) => {
     neededCompetenceIds.forEach((id) => selectedCompetenceTreeIds.add(id))
 
     const studentGrade = Number(report.student.studentGrade)
+    const allGrades = reportContent?.allGrades === true || reportContent?.allGrades === "true" || reportContent?.allGrades === 1 || reportContent?.allGrades === "1"
 
     // Subjects and groups are just containers; only leaf competences are filtered by grade,
     // so a narrower grade range on a parent group can't hide children that do cover the student's grade.
@@ -94,7 +95,7 @@ export default defineEventHandler(async (event) => {
       if (!neededCompetenceIds.has(c.id)) return false
       if (c.competenceType !== "competence") return true
       const grades = Array.isArray(c.grades) ? c.grades : []
-      return !studentGrade || grades.includes(studentGrade)
+      return allGrades || !studentGrade || grades.includes(studentGrade)
     })
 
     // Fetch user competence levels for ALL relevant competences
