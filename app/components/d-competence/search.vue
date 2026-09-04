@@ -64,7 +64,13 @@ const { data: competences } = useFetch("/api/competences", {
   params: queryParams
 })
 
-const filtered = computed(() => competences.value)
+const filtered = computed(() => {
+  const items = competences.value ?? []
+  const hasSearchFilter = debouncedSearch.value.trim().length > 0 || grade.value !== null
+  if (!hasSearchFilter) return items
+
+  return items.filter((competence) => competence.competenceType === "competence")
+})
 
 async function onClick(competence: DCompetence) {
   if (competence.competenceType == "competence") {
